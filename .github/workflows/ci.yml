@@ -12,7 +12,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v5
-      - run: ./build.sh
+      - name: Build and test
+        run: ./build.sh
       - run: tar czf chip8-terminal-${{ matrix.target }}.tar.gz -C build chip8
       - uses: actions/upload-artifact@v4
         with:
