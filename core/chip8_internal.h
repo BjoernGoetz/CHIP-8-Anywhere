@@ -6,8 +6,8 @@
 #define CHIP8_INTERNAL_H
 
 #include "chip8.h"
-#include <stddef.h>
+#include <stdint.h>
 
-size_t chip8_memory_size(const struct chip8 *c);
+uint16_t chip8_read_pc(const struct chip8 *c);
 
 #endif

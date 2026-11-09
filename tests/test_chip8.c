@@ -10,12 +10,12 @@ void setUp(void) { c = chip8_create(); }
 
 void tearDown(void) {}
 
-static void test_memory_is_4096_bytes(void) {
-  TEST_ASSERT_EQUAL(4096, chip8_memory_size(c));
+static void test_create_sets_pc_to_program_start(void) {
+  TEST_ASSERT_EQUAL_HEX16(0x200, chip8_read_pc(c));
 }
 
 int main(void) {
   UNITY_BEGIN();
-  RUN_TEST(test_memory_is_4096_bytes);
+  RUN_TEST(test_create_sets_pc_to_program_start);
   return UNITY_END();
 }
