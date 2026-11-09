@@ -34,15 +34,23 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
       }
     }
 
+    c->pc += 2;
     return (struct chip8_step_result){CHIP8_STEP_OK, 0};
   }
+
   return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
 }
 
 uint16_t chip8_read_pc(const struct chip8 *c) { return c->pc; }
 
+void chip8_write_pc(struct chip8 *c, uint16_t pc) { c->pc = pc; }
+
 uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr) {
   return c->memory[addr];
+}
+
+void chip8_write_memory(struct chip8 *c, uint16_t addr, uint8_t value) {
+  c->memory[addr] = value;
 }
 
 bool chip8_read_pixel(const struct chip8 *c, uint8_t x, uint8_t y) {

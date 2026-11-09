@@ -55,11 +55,33 @@ static void test_00E0_clears_display(void) {
   }
 }
 
+static void test_step_advances_pc_to_next_instruction(void) {
+  const uint8_t rom[] = {0x00, 0xE0};
+  chip8_load_rom(c, rom, sizeof rom);
+
+  chip8_step(c);
+
+  TEST_ASSERT_EQUAL_HEX16(0x202, chip8_read_pc(c));
+}
+
+static void test_step_executes_instruction_at_pc(void) {
+  chip8_write_memory(c, 0x300, 0xE0);
+  chip8_write_memory(c, 0x301, 0x00);
+  chip8_write_pc(c, 0x300);
+
+  struct chip8_step_result r = chip8_step(c);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_UNKNOWN_OPCODE, r.status);
+  TEST_ASSERT_EQUAL_HEX16(0xE000, r.opcode);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
   RUN_TEST(test_step_reports_unknown_opcode);
   RUN_TEST(test_00E0_clears_display);
+  RUN_TEST(test_step_advances_pc_to_next_instruction);
+  RUN_TEST(test_step_executes_instruction_at_pc);
   return UNITY_END();
 }
