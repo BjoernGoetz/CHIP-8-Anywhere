@@ -11,7 +11,7 @@ void setUp(void) { c = chip8_create(); }
 void tearDown(void) {}
 
 static void test_create_sets_pc_to_program_start(void) {
-  TEST_ASSERT_EQUAL_HEX16(0x200, chip8_read_pc(c));
+  TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
 }
 
 static void test_load_rom_copies_rom_to_0x200(void) {
@@ -20,7 +20,7 @@ static void test_load_rom_copies_rom_to_0x200(void) {
 
   uint8_t loaded[sizeof rom];
   for (size_t i = 0; i < sizeof rom; i++) {
-    loaded[i] = chip8_read_memory(c, (uint16_t)(0x200 + i));
+    loaded[i] = c->memory[0x200 + i];
   }
   TEST_ASSERT_EQUAL_HEX8_ARRAY(rom, loaded, sizeof rom);
 }
@@ -40,7 +40,7 @@ static void test_00E0_clears_display(void) {
 
   for (uint8_t y = 0; y < 32; y++) {
     for (uint8_t x = 0; x < 64; x++) {
-      chip8_write_pixel(c, x, y, true);
+      c->display[y][x] = true;
     }
   }
 
@@ -50,7 +50,7 @@ static void test_00E0_clears_display(void) {
 
   for (uint8_t y = 0; y < 32; y++) {
     for (uint8_t x = 0; x < 64; x++) {
-      TEST_ASSERT_FALSE(chip8_read_pixel(c, x, y));
+      TEST_ASSERT_FALSE(c->display[y][x]);
     }
   }
 }
@@ -61,13 +61,13 @@ static void test_step_advances_pc_to_next_instruction(void) {
 
   chip8_step(c);
 
-  TEST_ASSERT_EQUAL_HEX16(0x202, chip8_read_pc(c));
+  TEST_ASSERT_EQUAL_HEX16(0x202, c->pc);
 }
 
 static void test_step_executes_instruction_at_pc(void) {
-  chip8_write_memory(c, 0x300, 0xE0);
-  chip8_write_memory(c, 0x301, 0x00);
-  chip8_write_pc(c, 0x300);
+  c->memory[0x300] = 0xE0;
+  c->memory[0x301] = 0x00;
+  c->pc = 0x300;
 
   struct chip8_step_result r = chip8_step(c);
 
@@ -92,7 +92,7 @@ static void test_ANNN_sets_i_to_nnn(void) {
     chip8_load_rom(m, rom, sizeof rom);
 
     struct chip8_step_result r = chip8_step(m);
-    uint16_t actual_i = chip8_read_i(m);
+    uint16_t actual_i = m->i;
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
     TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, actual_i);
@@ -117,7 +117,7 @@ static void test_6XNN_sets_vx_to_nn(void) {
     chip8_load_rom(m, rom, sizeof rom);
 
     struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_vx = chip8_read_v(m, cases[n].x);
+    uint8_t actual_vx = m->v[cases[n].x];
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
     TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);

@@ -7,14 +7,6 @@
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_WIDTH 64
 
-struct chip8 {
-  uint8_t memory[4096];
-  uint16_t pc;
-  uint16_t i;
-  uint8_t v[16];
-  bool display[64][32];
-};
-
 struct chip8 *chip8_create(void) {
   struct chip8 *c = chip8_platform_alloc(sizeof(struct chip8));
   c->pc = PROGRAM_START;
@@ -50,28 +42,4 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
   }
 
   return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
-}
-
-uint16_t chip8_read_pc(const struct chip8 *c) { return c->pc; }
-
-void chip8_write_pc(struct chip8 *c, uint16_t pc) { c->pc = pc; }
-
-uint16_t chip8_read_i(const struct chip8 *c) { return c->i; }
-
-uint8_t chip8_read_v(const struct chip8 *c, uint8_t x) { return c->v[x]; }
-
-uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr) {
-  return c->memory[addr];
-}
-
-void chip8_write_memory(struct chip8 *c, uint16_t addr, uint8_t value) {
-  c->memory[addr] = value;
-}
-
-bool chip8_read_pixel(const struct chip8 *c, uint8_t x, uint8_t y) {
-  return c->display[y][x];
-}
-
-void chip8_write_pixel(struct chip8 *c, uint8_t x, uint8_t y, bool is_on) {
-  c->display[y][x] = is_on;
 }

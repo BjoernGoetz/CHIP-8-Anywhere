@@ -1,5 +1,5 @@
 /*
- * Access to the core's internals, for the unit tests only.
+ * The core's internals, for chip8.c and the unit tests only.
  * Platforms must include only chip8.h.
  */
 #ifndef CHIP8_INTERNAL_H
@@ -9,13 +9,12 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-uint16_t chip8_read_pc(const struct chip8 *c);
-void chip8_write_pc(struct chip8 *c, uint16_t pc);
-uint16_t chip8_read_i(const struct chip8 *c);
-uint8_t chip8_read_v(const struct chip8 *c, uint8_t x);
-uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr);
-void chip8_write_memory(struct chip8 *c, uint16_t addr, uint8_t value);
-bool chip8_read_pixel(const struct chip8 *c, uint8_t x, uint8_t y);
-void chip8_write_pixel(struct chip8 *c, uint8_t x, uint8_t y, bool is_on);
+struct chip8 {
+  uint8_t memory[4096];
+  uint16_t pc;
+  uint16_t i;
+  uint8_t v[16];
+  bool display[64][32];
+};
 
 #endif
