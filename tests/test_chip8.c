@@ -99,6 +99,31 @@ static void test_ANNN_sets_i_to_nnn(void) {
   }
 }
 
+static void test_6XNN_sets_vx_to_nn(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x;
+    uint8_t expected_vx;
+  } cases[] = {
+      {0x600C, 0x0, 0x0C},
+      {0x6A42, 0xA, 0x42},
+      {0x6FFF, 0xF, 0xFF},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+
+    struct chip8_step_result r = chip8_step(m);
+    uint8_t actual_vx = chip8_read_v(m, cases[n].x);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);
+  }
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -108,5 +133,6 @@ int main(void) {
   RUN_TEST(test_step_advances_pc_to_next_instruction);
   RUN_TEST(test_step_executes_instruction_at_pc);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
+  RUN_TEST(test_6XNN_sets_vx_to_nn);
   return UNITY_END();
 }

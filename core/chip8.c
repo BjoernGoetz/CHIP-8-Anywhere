@@ -11,6 +11,7 @@ struct chip8 {
   uint8_t memory[4096];
   uint16_t pc;
   uint16_t i;
+  uint8_t v[16];
   bool display[64][32];
 };
 
@@ -43,6 +44,10 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
     c->i = opcode & 0x0FFF;
     return (struct chip8_step_result){CHIP8_STEP_OK, 0};
   }
+  if ((opcode & 0xF000) == 0x6000) {
+    c->v[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
+    return (struct chip8_step_result){CHIP8_STEP_OK, 0};
+  }
 
   return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
 }
@@ -52,6 +57,8 @@ uint16_t chip8_read_pc(const struct chip8 *c) { return c->pc; }
 void chip8_write_pc(struct chip8 *c, uint16_t pc) { c->pc = pc; }
 
 uint16_t chip8_read_i(const struct chip8 *c) { return c->i; }
+
+uint8_t chip8_read_v(const struct chip8 *c, uint8_t x) { return c->v[x]; }
 
 uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr) {
   return c->memory[addr];
