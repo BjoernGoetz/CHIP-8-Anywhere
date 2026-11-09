@@ -9,5 +9,6 @@
 #include <stdint.h>
 
 uint16_t chip8_read_pc(const struct chip8 *c);
+uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr);
 
 #endif
