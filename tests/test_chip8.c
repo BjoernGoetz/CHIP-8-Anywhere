@@ -29,7 +29,9 @@ static void test_step_reports_unknown_opcode(void) {
   const uint8_t rom[] = {0xE0};
   chip8_load_rom(c, rom, sizeof rom);
 
-  TEST_ASSERT_EQUAL(CHIP8_STEP_UNKNOWN_OPCODE, chip8_step(c));
+  struct chip8_step_result r = chip8_step(c);
+  TEST_ASSERT_EQUAL(CHIP8_STEP_UNKNOWN_OPCODE, r.status);
+  TEST_ASSERT_EQUAL_HEX16(0xE000, r.opcode);
 }
 
 int main(void) {
