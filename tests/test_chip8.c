@@ -26,7 +26,7 @@ static void test_load_rom_copies_rom_to_0x200(void) {
 }
 
 static void test_step_reports_unknown_opcode(void) {
-  const uint8_t rom[] = {0xE0};
+  const uint8_t rom[] = {0xE0, 0x00};
   chip8_load_rom(c, rom, sizeof rom);
 
   struct chip8_step_result r = chip8_step(c);
@@ -34,10 +34,32 @@ static void test_step_reports_unknown_opcode(void) {
   TEST_ASSERT_EQUAL_HEX16(0xE000, r.opcode);
 }
 
+static void test_00E0_clears_display(void) {
+  const uint8_t rom[] = {0x00, 0xE0};
+  chip8_load_rom(c, rom, sizeof rom);
+
+  for (uint8_t y = 0; y < 32; y++) {
+    for (uint8_t x = 0; x < 64; x++) {
+      chip8_write_pixel(c, x, y, true);
+    }
+  }
+
+  struct chip8_step_result r = chip8_step(c);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+
+  for (uint8_t y = 0; y < 32; y++) {
+    for (uint8_t x = 0; x < 64; x++) {
+      TEST_ASSERT_FALSE(chip8_read_pixel(c, x, y));
+    }
+  }
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
   RUN_TEST(test_step_reports_unknown_opcode);
+  RUN_TEST(test_00E0_clears_display);
   return UNITY_END();
 }

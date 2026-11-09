@@ -6,9 +6,12 @@
 #define CHIP8_INTERNAL_H
 
 #include "chip8.h"
+#include <stdbool.h>
 #include <stdint.h>
 
 uint16_t chip8_read_pc(const struct chip8 *c);
 uint8_t chip8_read_memory(const struct chip8 *c, uint16_t addr);
+bool chip8_read_pixel(const struct chip8 *c, uint8_t x, uint8_t y);
+void chip8_write_pixel(struct chip8 *c, uint8_t x, uint8_t y, bool is_on);
 
 #endif
