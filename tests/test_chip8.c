@@ -25,9 +25,17 @@ static void test_load_rom_copies_rom_to_0x200(void) {
   TEST_ASSERT_EQUAL_HEX8_ARRAY(rom, loaded, sizeof rom);
 }
 
+static void test_step_reports_unknown_opcode(void) {
+  const uint8_t rom[] = {0xE0};
+  chip8_load_rom(c, rom, sizeof rom);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_UNKNOWN_OPCODE, chip8_step(c));
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
+  RUN_TEST(test_step_reports_unknown_opcode);
   return UNITY_END();
 }
