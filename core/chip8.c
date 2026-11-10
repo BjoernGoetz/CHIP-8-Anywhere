@@ -50,6 +50,8 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
     uint8_t x_reg = (opcode & 0x0F00) >> 8;
     uint16_t nn = opcode & 0x00FF;
     c->v[x_reg] += nn;
+  } else if ((opcode & 0xF000) == 0x1000) {
+    c->pc = opcode & 0x0FFF;
   } else {
     status = CHIP8_STEP_UNKNOWN_OPCODE;
   }

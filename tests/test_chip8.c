@@ -76,6 +76,31 @@ static void test_step_executes_instruction_at_pc(void) {
   TEST_ASSERT_EQUAL_HEX16(0xE000, r.opcode);
 }
 
+static void test_1NNN_jumps_to_nnn(void) {
+  const struct {
+    uint16_t opcode;
+    uint16_t expected_pc;
+  } cases[] = {
+      {0x1228, 0x228},
+      {0x1ABC, 0xABC},
+      {0x1200, 0x200},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+
+    struct chip8_step_result r = chip8_step(m);
+    uint16_t actual_pc = m->pc;
+    chip8_destroy(m);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, actual_pc);
+  }
+}
+
 static void test_ANNN_sets_i_to_nnn(void) {
   const struct {
     uint16_t opcode;
@@ -200,6 +225,7 @@ int main(void) {
   RUN_TEST(test_00E0_clears_display);
   RUN_TEST(test_step_advances_pc_to_next_instruction);
   RUN_TEST(test_step_executes_instruction_at_pc);
+  RUN_TEST(test_1NNN_jumps_to_nnn);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
   RUN_TEST(test_6XNN_sets_vx_to_nn);
   RUN_TEST(test_7XNN_adds_nn_to_vx);
