@@ -22,6 +22,7 @@ void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size) {
 }
 
 struct chip8_step_result chip8_step(struct chip8 *c) {
+  enum chip8_step_status status = CHIP8_STEP_OK;
   uint16_t opcode = (uint16_t)(c->memory[c->pc] << 8 | c->memory[c->pc + 1]);
   c->pc += 2;
 
@@ -31,17 +32,13 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
         c->display[y][x] = false;
       }
     }
-
-    return (struct chip8_step_result){CHIP8_STEP_OK, 0};
-  }
-  if ((opcode & 0xF000) == 0xA000) {
+  } else if ((opcode & 0xF000) == 0xA000) {
     c->i = opcode & 0x0FFF;
-    return (struct chip8_step_result){CHIP8_STEP_OK, 0};
-  }
-  if ((opcode & 0xF000) == 0x6000) {
+  } else if ((opcode & 0xF000) == 0x6000) {
     c->v[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
-    return (struct chip8_step_result){CHIP8_STEP_OK, 0};
+  } else {
+    status = CHIP8_STEP_UNKNOWN_OPCODE;
   }
 
-  return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
+  return (struct chip8_step_result){status, opcode};
 }
