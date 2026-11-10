@@ -46,6 +46,10 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
     for (int x = 0; x < 8; x++) {
       c->display[y_offset][x_offset + x] = sprite >> (7 - x) & 1;
     }
+  } else if ((opcode & 0xF000) == 0x7000) {
+    uint8_t x_reg = (opcode & 0x0F00) >> 8;
+    uint16_t nn = opcode & 0x00FF;
+    c->v[x_reg] += nn;
   } else {
     status = CHIP8_STEP_UNKNOWN_OPCODE;
   }

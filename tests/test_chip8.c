@@ -127,6 +127,34 @@ static void test_6XNN_sets_vx_to_nn(void) {
   }
 }
 
+static void test_7XNN_adds_nn_to_vx(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x;
+    uint8_t vx;
+    uint8_t expected_vx;
+  } cases[] = {
+      {0x7009, 0x0, 0x10, 0x19},
+      {0x7A42, 0xA, 0x05, 0x47},
+      {0x7E01, 0xE, 0x80, 0x81},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+    m->v[cases[n].x] = cases[n].vx;
+
+    struct chip8_step_result r = chip8_step(m);
+    uint8_t actual_vx = m->v[cases[n].x];
+    chip8_destroy(m);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);
+  }
+}
+
 static void test_DXYN_draws_sprite_row(void) {
   const struct {
     uint16_t opcode;
@@ -174,6 +202,7 @@ int main(void) {
   RUN_TEST(test_step_executes_instruction_at_pc);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
   RUN_TEST(test_6XNN_sets_vx_to_nn);
+  RUN_TEST(test_7XNN_adds_nn_to_vx);
   RUN_TEST(test_DXYN_draws_sprite_row);
   return UNITY_END();
 }
