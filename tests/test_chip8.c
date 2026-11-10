@@ -26,6 +26,28 @@ static void test_load_rom_copies_rom_to_0x200(void) {
   TEST_ASSERT_EQUAL_HEX8_ARRAY(rom, loaded, sizeof rom);
 }
 
+static void test_read_pixel_reads_display(void) {
+  const struct {
+    int x, y;
+    bool on;
+  } cases[] = {
+      {10, 5, true},
+      {63, 31, true},
+      {20, 7, false},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    for (int y = 0; y < 32; y++) {
+      for (int x = 0; x < 64; x++) {
+        c->display[y][x] = false;
+      }
+    }
+    c->display[cases[n].y][cases[n].x] = cases[n].on;
+
+    TEST_ASSERT_EQUAL(cases[n].on, chip8_read_pixel(c, cases[n].x, cases[n].y));
+  }
+}
+
 static void test_step_reports_unknown_opcode(void) {
   const uint8_t rom[] = {0xE0, 0x00};
   chip8_load_rom(c, rom, sizeof rom);
@@ -221,6 +243,7 @@ int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
+  RUN_TEST(test_read_pixel_reads_display);
   RUN_TEST(test_step_reports_unknown_opcode);
   RUN_TEST(test_00E0_clears_display);
   RUN_TEST(test_step_advances_pc_to_next_instruction);

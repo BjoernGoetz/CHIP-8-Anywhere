@@ -21,6 +21,10 @@ void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size) {
   }
 }
 
+bool chip8_read_pixel(const struct chip8 *c, int x, int y) {
+  return c->display[y][x];
+}
+
 struct chip8_step_result chip8_step(struct chip8 *c) {
   enum chip8_step_status status = CHIP8_STEP_OK;
   uint16_t opcode = (uint16_t)(c->memory[c->pc] << 8 | c->memory[c->pc + 1]);
