@@ -17,6 +17,7 @@ struct chip8_step_result {
 };
 
 struct chip8 *chip8_create(void);
+void chip8_destroy(struct chip8 *c);
 void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size);
 struct chip8_step_result chip8_step(struct chip8 *c);
 

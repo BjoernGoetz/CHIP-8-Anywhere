@@ -13,6 +13,8 @@ struct chip8 *chip8_create(void) {
   return c;
 }
 
+void chip8_destroy(struct chip8 *c) { chip8_platform_free(c); }
+
 void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size) {
   for (size_t i = 0; i < size; i++) {
     c->memory[PROGRAM_START + i] = rom[i];

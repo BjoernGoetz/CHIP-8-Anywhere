@@ -3,12 +3,13 @@
 #include <stdlib.h>
 
 void *chip8_platform_alloc(size_t size) { return malloc(size); }
+void chip8_platform_free(void *ptr) { free(ptr); }
 
 static struct chip8 *c;
 
 void setUp(void) { c = chip8_create(); }
 
-void tearDown(void) {}
+void tearDown(void) { chip8_destroy(c); }
 
 static void test_create_sets_pc_to_program_start(void) {
   TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
@@ -93,6 +94,7 @@ static void test_ANNN_sets_i_to_nnn(void) {
 
     struct chip8_step_result r = chip8_step(m);
     uint16_t actual_i = m->i;
+    chip8_destroy(m);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
     TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, actual_i);
@@ -118,6 +120,7 @@ static void test_6XNN_sets_vx_to_nn(void) {
 
     struct chip8_step_result r = chip8_step(m);
     uint8_t actual_vx = m->v[cases[n].x];
+    chip8_destroy(m);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
     TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);

@@ -8,5 +8,6 @@
 #include <stddef.h>
 
 void *chip8_platform_alloc(size_t size);
+void chip8_platform_free(void *ptr);
 
 #endif
