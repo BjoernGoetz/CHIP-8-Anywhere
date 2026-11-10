@@ -14,7 +14,7 @@ struct chip8 {
   uint16_t pc;
   uint16_t i;
   uint8_t v[16];
-  bool display[64][32];
+  bool display[32][64];
 };
 
 #endif
