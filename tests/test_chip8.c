@@ -127,6 +127,43 @@ static void test_6XNN_sets_vx_to_nn(void) {
   }
 }
 
+static void test_DXYN_draws_sprite_row(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg, y_reg;
+    uint8_t x, y;
+    uint16_t i;
+    uint8_t sprite;
+    const char *row;
+  } cases[] = {
+      {0xD011, 0x0, 0x1, 0, 0, 0x300, 0x80, "10000000"},
+      {0xD231, 0x2, 0x3, 10, 5, 0x5A4, 0xF0, "11110000"},
+      {0xDAB1, 0xA, 0xB, 56, 31, 0xFFF, 0xA5, "10100101"},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+    m->i = cases[n].i;
+    m->memory[cases[n].i] = cases[n].sprite;
+    m->v[cases[n].x_reg] = cases[n].x;
+    m->v[cases[n].y_reg] = cases[n].y;
+
+    struct chip8_step_result r = chip8_step(m);
+
+    char actual[9] = {0};
+    for (int bit = 0; bit < 8; bit++) {
+      actual[bit] = m->display[cases[n].y][cases[n].x + bit] ? '1' : '0';
+    }
+    chip8_destroy(m);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_STRING(cases[n].row, actual);
+  }
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -137,5 +174,6 @@ int main(void) {
   RUN_TEST(test_step_executes_instruction_at_pc);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
   RUN_TEST(test_6XNN_sets_vx_to_nn);
+  RUN_TEST(test_DXYN_draws_sprite_row);
   return UNITY_END();
 }
