@@ -19,7 +19,10 @@ static size_t read_rom_file(const char *path, uint8_t *rom, size_t max) {
 }
 
 int main(int argc, char **argv) {
-  (void)argc;
+  if (argc != 2) {
+    fprintf(stderr, "usage: %s <rom.ch8>\n", argv[0]);
+    return 2;
+  }
 
   uint8_t rom[512];
   size_t size = read_rom_file(argv[1], rom, sizeof rom);

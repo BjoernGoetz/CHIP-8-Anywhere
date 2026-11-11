@@ -31,3 +31,10 @@ status=0
 [ "$status" -eq 1 ]
 echo "cannot open ROM 'build/missing.ch8'" > build/smoke_expected.txt
 cmp -s build/smoke_expected.txt build/smoke_out.txt
+
+# No ROM path at all: exit code 2 (wrong usage) and exactly the usage line.
+status=0
+./build/chip8_sanitized > /dev/null 2> build/smoke_out.txt || status=$?
+[ "$status" -eq 2 ]
+echo "usage: ./build/chip8_sanitized <rom.ch8>" > build/smoke_expected.txt
+cmp -s build/smoke_expected.txt build/smoke_out.txt
