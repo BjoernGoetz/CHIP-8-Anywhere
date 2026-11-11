@@ -14,7 +14,7 @@ struct chip8 {
   uint16_t pc;
   uint16_t i;
   uint8_t v[16];
-  bool display[32][64];
+  bool display[CHIP8_DISPLAY_HEIGHT][CHIP8_DISPLAY_WIDTH];
 };
 
 #endif
