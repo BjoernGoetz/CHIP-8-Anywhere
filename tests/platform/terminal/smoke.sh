@@ -23,3 +23,11 @@ cmp -s build/smoke_expected.txt build/smoke_out.txt
 # two characters per pixel, and the other 31 rows show nothing.
 tail -n 32 build/smoke_screen.txt | head -n 1 | grep -q '██  ██    ██  ██  '
 [ "$(tail -n 31 build/smoke_screen.txt | grep -c '█')" -eq 0 ]
+
+# A ROM path that doesn't exist: exit code 1 and exactly this one line on
+# stderr, so a crash or a sanitizer report fails the test.
+status=0
+./build/chip8_sanitized build/missing.ch8 > /dev/null 2> build/smoke_out.txt || status=$?
+[ "$status" -eq 1 ]
+echo "cannot open ROM 'build/missing.ch8'" > build/smoke_expected.txt
+cmp -s build/smoke_expected.txt build/smoke_out.txt

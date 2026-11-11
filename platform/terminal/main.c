@@ -9,6 +9,9 @@ void chip8_platform_free(void *ptr) { free(ptr); }
 
 static size_t read_rom_file(const char *path, uint8_t *rom, size_t max) {
   FILE *f = fopen(path, "rb");
+  if (f == NULL) {
+    return 0;
+  }
   size_t size = fread(rom, 1, max, f);
   fclose(f);
 
@@ -20,6 +23,10 @@ int main(int argc, char **argv) {
 
   uint8_t rom[512];
   size_t size = read_rom_file(argv[1], rom, sizeof rom);
+  if (size == 0) {
+    fprintf(stderr, "cannot open ROM '%s'\n", argv[1]);
+    return 1;
+  }
 
   struct chip8 *c = chip8_create();
   chip8_load_rom(c, rom, size);
