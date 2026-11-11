@@ -7,13 +7,19 @@
 void *chip8_platform_alloc(size_t size) { return malloc(size); }
 void chip8_platform_free(void *ptr) { free(ptr); }
 
+static size_t read_rom_file(const char *path, uint8_t *rom, size_t max) {
+  FILE *f = fopen(path, "rb");
+  size_t size = fread(rom, 1, max, f);
+  fclose(f);
+
+  return size;
+}
+
 int main(int argc, char **argv) {
   (void)argc;
 
   uint8_t rom[512];
-  FILE *f = fopen(argv[1], "rb");
-  size_t size = fread(rom, 1, sizeof rom, f);
-  fclose(f);
+  size_t size = read_rom_file(argv[1], rom, sizeof rom);
 
   struct chip8 *c = chip8_create();
   chip8_load_rom(c, rom, size);
