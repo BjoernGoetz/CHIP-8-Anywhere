@@ -25,44 +25,74 @@ bool chip8_read_pixel(const struct chip8 *c, int x, int y) {
   return c->display[y][x];
 }
 
+static void execute_00E0_clear_screen(struct chip8 *c, uint16_t opcode) {
+  (void)opcode;
+  for (int y = 0; y < DISPLAY_HEIGHT; y++) {
+    for (int x = 0; x < DISPLAY_WIDTH; x++) {
+      c->display[y][x] = false;
+    }
+  }
+}
+
+static void execute_ANNN_set_i(struct chip8 *c, uint16_t opcode) {
+  c->i = opcode & 0x0FFF;
+}
+
+static void execute_6XNN_set_vx(struct chip8 *c, uint16_t opcode) {
+  c->v[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
+}
+
+static void execute_DXYN_draw(struct chip8 *c, uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  uint8_t y_reg = (opcode & 0x00F0) >> 4;
+  uint8_t n = (opcode & 0x000F);
+
+  uint8_t x_offset = c->v[x_reg];
+  uint8_t y_offset = c->v[y_reg];
+
+  for (int y = 0; y < n; y++) {
+    uint8_t sprite = c->memory[c->i + y];
+    for (int x = 0; x < 8; x++) {
+      c->display[y_offset + y][x_offset + x] = sprite >> (7 - x) & 1;
+    }
+  }
+}
+
+static void execute_7XNN_add_to_vx(struct chip8 *c, uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  uint16_t nn = opcode & 0x00FF;
+  c->v[x_reg] += nn;
+}
+
+static void execute_1NNN_jump(struct chip8 *c, uint16_t opcode) {
+  c->pc = opcode & 0x0FFF;
+}
+
+struct instruction {
+  uint16_t mask;
+  uint16_t pattern;
+  void (*execute)(struct chip8 *c, uint16_t opcode);
+};
+
+static const struct instruction instructions[] = {
+    {0xFFFF, 0x00E0, execute_00E0_clear_screen},
+    {0xF000, 0x1000, execute_1NNN_jump},
+    {0xF000, 0x6000, execute_6XNN_set_vx},
+    {0xF000, 0x7000, execute_7XNN_add_to_vx},
+    {0xF000, 0xA000, execute_ANNN_set_i},
+    {0xF000, 0xD000, execute_DXYN_draw},
+};
+
 struct chip8_step_result chip8_step(struct chip8 *c) {
-  enum chip8_step_status status = CHIP8_STEP_OK;
   uint16_t opcode = (uint16_t)(c->memory[c->pc] << 8 | c->memory[c->pc + 1]);
   c->pc += 2;
 
-  if (opcode == 0x00E0) {
-    for (int y = 0; y < DISPLAY_HEIGHT; y++) {
-      for (int x = 0; x < DISPLAY_WIDTH; x++) {
-        c->display[y][x] = false;
-      }
+  for (size_t i = 0; i < sizeof instructions / sizeof instructions[0]; i++) {
+    if ((opcode & instructions[i].mask) == instructions[i].pattern) {
+      instructions[i].execute(c, opcode);
+      return (struct chip8_step_result){CHIP8_STEP_OK, 0};
     }
-  } else if ((opcode & 0xF000) == 0xA000) {
-    c->i = opcode & 0x0FFF;
-  } else if ((opcode & 0xF000) == 0x6000) {
-    c->v[(opcode & 0x0F00) >> 8] = opcode & 0x00FF;
-  } else if ((opcode & 0xD000) == 0xD000) {
-    uint8_t x_reg = (opcode & 0x0F00) >> 8;
-    uint8_t y_reg = (opcode & 0x00F0) >> 4;
-    uint8_t n = (opcode & 0x000F);
-
-    uint8_t x_offset = c->v[x_reg];
-    uint8_t y_offset = c->v[y_reg];
-
-    for (int y = 0; y < n; y++) {
-      uint8_t sprite = c->memory[c->i + y];
-      for (int x = 0; x < 8; x++) {
-        c->display[y_offset + y][x_offset + x] = sprite >> (7 - x) & 1;
-      }
-    }
-  } else if ((opcode & 0xF000) == 0x7000) {
-    uint8_t x_reg = (opcode & 0x0F00) >> 8;
-    uint16_t nn = opcode & 0x00FF;
-    c->v[x_reg] += nn;
-  } else if ((opcode & 0xF000) == 0x1000) {
-    c->pc = opcode & 0x0FFF;
-  } else {
-    status = CHIP8_STEP_UNKNOWN_OPCODE;
   }
 
-  return (struct chip8_step_result){status, opcode};
+  return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
 }
