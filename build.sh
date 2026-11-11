@@ -11,10 +11,10 @@ UNITY="-Ithird_party/unity third_party/unity/unity.c"
 
 gcc $CFLAGS -o build/chip8 $TERMINAL $CORE
 gcc $CFLAGS $SANITIZE -o build/chip8_sanitized $TERMINAL $CORE
-gcc $CFLAGS $SANITIZE $UNITY -o build/test_chip8 tests/test_chip8.c $CORE
+gcc $CFLAGS $SANITIZE $UNITY -o build/test_chip8 tests/core/test_chip8.c $CORE
 gcc $CFLAGS $SANITIZE $UNITY -Iplatform/terminal -o build/test_display \
     tests/platform/terminal/test_display.c platform/terminal/display.c $CORE
 
 ./build/test_chip8
 ./build/test_display
-./tests/smoke.sh
+./tests/platform/terminal/smoke.sh
