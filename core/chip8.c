@@ -43,12 +43,16 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
   } else if ((opcode & 0xD000) == 0xD000) {
     uint8_t x_reg = (opcode & 0x0F00) >> 8;
     uint8_t y_reg = (opcode & 0x00F0) >> 4;
+    uint8_t n = (opcode & 0x000F);
+
     uint8_t x_offset = c->v[x_reg];
     uint8_t y_offset = c->v[y_reg];
-    uint8_t sprite = c->memory[c->i];
 
-    for (int x = 0; x < 8; x++) {
-      c->display[y_offset][x_offset + x] = sprite >> (7 - x) & 1;
+    for (int y = 0; y < n; y++) {
+      uint8_t sprite = c->memory[c->i + y];
+      for (int x = 0; x < 8; x++) {
+        c->display[y_offset + y][x_offset + x] = sprite >> (7 - x) & 1;
+      }
     }
   } else if ((opcode & 0xF000) == 0x7000) {
     uint8_t x_reg = (opcode & 0x0F00) >> 8;

@@ -239,6 +239,41 @@ static void test_DXYN_draws_sprite_row(void) {
   }
 }
 
+static const char *read_display_row(const struct chip8 *m, int x, int y) {
+  static char row[9];
+  for (int bit = 0; bit < 8; bit++) {
+    row[bit] = m->display[y][x + bit] ? '1' : '0';
+  }
+  return row;
+}
+
+static void test_DXYN_draws_n_rows(void) {
+  const uint8_t rom[] = {0xD0, 0x13};
+  chip8_load_rom(c, rom, sizeof rom);
+
+  for (int y = 0; y < 32; y++) {
+    for (int x = 0; x < 64; x++) {
+      c->display[y][x] = false;
+    }
+  }
+
+  c->i = 0x300;
+  c->memory[0x300] = 0xF0; /* 1111 0000 */
+  c->memory[0x301] = 0x90; /* 1001 0000 */
+  c->memory[0x302] = 0xF0; /* 1111 0000 */
+  c->memory[0x303] = 0xFF; /* not part of the sprite: must not be drawn */
+  c->v[0] = 4;
+  c->v[1] = 2;
+
+  struct chip8_step_result r = chip8_step(c);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+  TEST_ASSERT_EQUAL_STRING("11110000", read_display_row(c, 4, 2));
+  TEST_ASSERT_EQUAL_STRING("10010000", read_display_row(c, 4, 3));
+  TEST_ASSERT_EQUAL_STRING("11110000", read_display_row(c, 4, 4));
+  TEST_ASSERT_EQUAL_STRING("00000000", read_display_row(c, 4, 5));
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -253,5 +288,6 @@ int main(void) {
   RUN_TEST(test_6XNN_sets_vx_to_nn);
   RUN_TEST(test_7XNN_adds_nn_to_vx);
   RUN_TEST(test_DXYN_draws_sprite_row);
+  RUN_TEST(test_DXYN_draws_n_rows);
   return UNITY_END();
 }
