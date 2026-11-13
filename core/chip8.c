@@ -83,6 +83,11 @@ static void execute_8XY0_set_vx_to_value_of_vy(struct chip8 *c,
   c->v[x_reg] = c->v[y_reg];
 }
 
+static void execute_FX1E_add_vx_to_i(struct chip8 *c, uint16_t opcode) {
+  uint8_t x = (opcode & 0x0F00) >> 8;
+  c->i += c->v[x];
+}
+
 struct instruction {
   uint16_t mask;
   uint16_t pattern;
@@ -97,6 +102,7 @@ static const struct instruction instructions[] = {
     {0xF00F, 0x8000, execute_8XY0_set_vx_to_value_of_vy},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
+    {0xF0FF, 0xF01E, execute_FX1E_add_vx_to_i},
     {0xF0FF, 0xF065, execute_FX65_load_registers},
 };
 

@@ -355,6 +355,36 @@ static void test_8XY0_set_vx_to_value_of_vy(void) {
   }
 }
 
+static void test_FX1E_adds_vx_to_i(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t vx;
+    uint16_t i;
+    uint16_t expected_i;
+  } cases[] = {
+      {0xF01E, 0x0, 0x50, 0x100, 0x150},
+      {0xF61E, 0x6, 0x20, 0x2F0, 0x310},
+      {0xFF1E, 0xF, 0xFF, 0x528, 0x627},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+    m->v[cases[n].x_reg] = cases[n].vx;
+    m->i = cases[n].i;
+
+    struct chip8_step_result r = chip8_step(m);
+    uint16_t actual_i = m->i;
+    chip8_destroy(m);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, actual_i);
+  }
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -373,5 +403,6 @@ int main(void) {
   RUN_TEST(test_DXYN_draws_n_rows);
   RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
   RUN_TEST(test_FX65_increments_i_by_x_plus_1);
+  RUN_TEST(test_FX1E_adds_vx_to_i);
   return UNITY_END();
 }
