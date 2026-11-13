@@ -14,6 +14,7 @@ struct chip8 {
   uint16_t pc;
   uint16_t i;
   uint8_t v[16];
+  uint8_t delay_timer;
   uint8_t sound_timer;
   bool display[CHIP8_DISPLAY_HEIGHT][CHIP8_DISPLAY_WIDTH];
 };
