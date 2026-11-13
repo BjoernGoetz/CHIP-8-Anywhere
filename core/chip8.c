@@ -88,6 +88,12 @@ static void execute_FX1E_add_vx_to_i(struct chip8 *c, uint16_t opcode) {
   c->i += c->v[x];
 }
 
+static void execute_FX15_set_delay_timer_to_vx(struct chip8 *c,
+                                               uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  c->delay_timer = c->v[x_reg];
+}
+
 static void execute_FX18_set_sound_timer_to_vx(struct chip8 *c,
                                                uint16_t opcode) {
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
@@ -108,6 +114,7 @@ static const struct instruction instructions[] = {
     {0xF00F, 0x8000, execute_8XY0_set_vx_to_value_of_vy},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
+    {0xF0FF, 0xF015, execute_FX15_set_delay_timer_to_vx},
     {0xF0FF, 0xF018, execute_FX18_set_sound_timer_to_vx},
     {0xF0FF, 0xF01E, execute_FX1E_add_vx_to_i},
     {0xF0FF, 0xF065, execute_FX65_load_registers},
