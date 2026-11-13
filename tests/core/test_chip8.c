@@ -12,6 +12,11 @@ void setUp(void) { c = chip8_create(); }
 
 void tearDown(void) { chip8_destroy(c); }
 
+static void load_instruction(struct chip8 *m, uint16_t opcode) {
+  const uint8_t rom[] = {(uint8_t)(opcode >> 8), (uint8_t)(opcode & 0xFF)};
+  chip8_load_rom(m, rom, sizeof rom);
+}
+
 static void test_create_sets_pc_to_program_start(void) {
   TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
 }
@@ -50,8 +55,7 @@ static void test_read_pixel_reads_display(void) {
 }
 
 static void test_step_reports_unknown_opcode(void) {
-  const uint8_t rom[] = {0xE0, 0x00};
-  chip8_load_rom(c, rom, sizeof rom);
+  load_instruction(c, 0xE000);
 
   struct chip8_step_result r = chip8_step(c);
   TEST_ASSERT_EQUAL(CHIP8_STEP_UNKNOWN_OPCODE, r.status);
@@ -59,8 +63,7 @@ static void test_step_reports_unknown_opcode(void) {
 }
 
 static void test_00E0_clears_display(void) {
-  const uint8_t rom[] = {0x00, 0xE0};
-  chip8_load_rom(c, rom, sizeof rom);
+  load_instruction(c, 0x00E0);
 
   for (uint8_t y = 0; y < 32; y++) {
     for (uint8_t x = 0; x < 64; x++) {
@@ -80,8 +83,7 @@ static void test_00E0_clears_display(void) {
 }
 
 static void test_step_advances_pc_to_next_instruction(void) {
-  const uint8_t rom[] = {0x00, 0xE0};
-  chip8_load_rom(c, rom, sizeof rom);
+  load_instruction(c, 0x00E0);
 
   chip8_step(c);
 
@@ -111,9 +113,7 @@ static void test_1NNN_jumps_to_nnn(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
 
     struct chip8_step_result r = chip8_step(m);
     uint16_t actual_pc = m->pc;
@@ -136,9 +136,7 @@ static void test_ANNN_sets_i_to_nnn(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
 
     struct chip8_step_result r = chip8_step(m);
     uint16_t actual_i = m->i;
@@ -162,9 +160,7 @@ static void test_6XNN_sets_vx_to_nn(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
 
     struct chip8_step_result r = chip8_step(m);
     uint8_t actual_vx = m->v[cases[n].x];
@@ -189,9 +185,7 @@ static void test_7XNN_adds_nn_to_vx(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->v[cases[n].x] = cases[n].vx;
 
     struct chip8_step_result r = chip8_step(m);
@@ -219,9 +213,7 @@ static void test_DXYN_draws_sprite_row(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->i = cases[n].i;
     m->memory[cases[n].i] = cases[n].sprite;
     m->v[cases[n].x_reg] = cases[n].x;
@@ -249,8 +241,7 @@ static const char *read_display_row(const struct chip8 *m, int x, int y) {
 }
 
 static void test_DXYN_draws_n_rows(void) {
-  const uint8_t rom[] = {0xD0, 0x13};
-  chip8_load_rom(c, rom, sizeof rom);
+  load_instruction(c, 0xD013);
 
   for (int y = 0; y < 32; y++) {
     for (int x = 0; x < 64; x++) {
@@ -299,9 +290,7 @@ static void test_FX65_loads_v0_to_vx_from_memory(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->i = cases[n].i;
     memcpy(&m->memory[cases[n].i], data, sizeof data);
     memset(m->v, 0xAA, sizeof m->v);
@@ -317,8 +306,7 @@ static void test_FX65_loads_v0_to_vx_from_memory(void) {
 }
 
 static void test_FX65_increments_i_by_x_plus_1(void) {
-  const uint8_t rom[] = {0xF3, 0x65};
-  chip8_load_rom(c, rom, sizeof rom);
+  load_instruction(c, 0xF365);
   c->i = 0x300;
 
   struct chip8_step_result r = chip8_step(c);
@@ -340,9 +328,7 @@ static void test_8XY0_set_vx_to_value_of_vy(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->v[cases[n].x_reg] = cases[n].x;
     m->v[cases[n].y_reg] = cases[n].y;
 
@@ -370,9 +356,7 @@ static void test_FX1E_adds_vx_to_i(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->v[cases[n].x_reg] = cases[n].vx;
     m->i = cases[n].i;
 
@@ -398,9 +382,7 @@ static void test_FX15_sets_delay_timer_to_vx(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->v[cases[n].x_reg] = cases[n].vx;
     m->delay_timer = 0xAA;
 
@@ -426,9 +408,7 @@ static void test_FX18_sets_sound_timer_to_vx(void) {
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
     struct chip8 *m = chip8_create();
-    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
-                           (uint8_t)(cases[n].opcode & 0xFF)};
-    chip8_load_rom(m, rom, sizeof rom);
+    load_instruction(m, cases[n].opcode);
     m->v[cases[n].x_reg] = cases[n].vx;
     m->sound_timer = 0xAA;
 
