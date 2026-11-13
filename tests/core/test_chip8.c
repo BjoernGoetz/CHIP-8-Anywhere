@@ -17,6 +17,11 @@ static void load_instruction(struct chip8 *m, uint16_t opcode) {
   chip8_load_rom(m, rom, sizeof rom);
 }
 
+static void reset_machine(void) {
+  chip8_destroy(c);
+  c = chip8_create();
+}
+
 static void test_create_sets_pc_to_program_start(void) {
   TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
 }
@@ -112,15 +117,13 @@ static void test_1NNN_jumps_to_nnn(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
 
-    struct chip8_step_result r = chip8_step(m);
-    uint16_t actual_pc = m->pc;
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, actual_pc);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, c->pc);
   }
 }
 
@@ -135,15 +138,13 @@ static void test_ANNN_sets_i_to_nnn(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
 
-    struct chip8_step_result r = chip8_step(m);
-    uint16_t actual_i = m->i;
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, actual_i);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, c->i);
   }
 }
 
@@ -159,15 +160,13 @@ static void test_6XNN_sets_vx_to_nn(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
 
-    struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_vx = m->v[cases[n].x];
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, c->v[cases[n].x]);
   }
 }
 
@@ -184,17 +183,23 @@ static void test_7XNN_adds_nn_to_vx(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->v[cases[n].x] = cases[n].vx;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x] = cases[n].vx;
 
-    struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_vx = m->v[cases[n].x];
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, actual_vx);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].expected_vx, c->v[cases[n].x]);
   }
+}
+
+static const char *read_display_row(const struct chip8 *m, int x, int y) {
+  static char row[9];
+  for (int bit = 0; bit < 8; bit++) {
+    row[bit] = m->display[y][x + bit] ? '1' : '0';
+  }
+  return row;
 }
 
 static void test_DXYN_draws_sprite_row(void) {
@@ -212,32 +217,19 @@ static void test_DXYN_draws_sprite_row(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->i = cases[n].i;
-    m->memory[cases[n].i] = cases[n].sprite;
-    m->v[cases[n].x_reg] = cases[n].x;
-    m->v[cases[n].y_reg] = cases[n].y;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->i = cases[n].i;
+    c->memory[cases[n].i] = cases[n].sprite;
+    c->v[cases[n].x_reg] = cases[n].x;
+    c->v[cases[n].y_reg] = cases[n].y;
 
-    struct chip8_step_result r = chip8_step(m);
-
-    char actual[9] = {0};
-    for (int bit = 0; bit < 8; bit++) {
-      actual[bit] = m->display[cases[n].y][cases[n].x + bit] ? '1' : '0';
-    }
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_STRING(cases[n].row, actual);
+    TEST_ASSERT_EQUAL_STRING(cases[n].row,
+                             read_display_row(c, cases[n].x, cases[n].y));
   }
-}
-
-static const char *read_display_row(const struct chip8 *m, int x, int y) {
-  static char row[9];
-  for (int bit = 0; bit < 8; bit++) {
-    row[bit] = m->display[y][x + bit] ? '1' : '0';
-  }
-  return row;
 }
 
 static void test_DXYN_draws_n_rows(void) {
@@ -289,19 +281,16 @@ static void test_FX65_loads_v0_to_vx_from_memory(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->i = cases[n].i;
-    memcpy(&m->memory[cases[n].i], data, sizeof data);
-    memset(m->v, 0xAA, sizeof m->v);
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->i = cases[n].i;
+    memcpy(&c->memory[cases[n].i], data, sizeof data);
+    memset(c->v, 0xAA, sizeof c->v);
 
-    struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_v[16];
-    memcpy(actual_v, m->v, sizeof actual_v);
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX8_ARRAY(cases[n].expected_v, actual_v, 16);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(cases[n].expected_v, c->v, 16);
   }
 }
 
@@ -327,17 +316,15 @@ static void test_8XY0_set_vx_to_value_of_vy(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->v[cases[n].x_reg] = cases[n].x;
-    m->v[cases[n].y_reg] = cases[n].y;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x_reg] = cases[n].x;
+    c->v[cases[n].y_reg] = cases[n].y;
 
-    struct chip8_step_result r = chip8_step(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX16(m->v[cases[n].x_reg], cases[n].y);
-
-    chip8_destroy(m);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].y, c->v[cases[n].x_reg]);
   }
 }
 
@@ -355,17 +342,15 @@ static void test_FX1E_adds_vx_to_i(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->v[cases[n].x_reg] = cases[n].vx;
-    m->i = cases[n].i;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x_reg] = cases[n].vx;
+    c->i = cases[n].i;
 
-    struct chip8_step_result r = chip8_step(m);
-    uint16_t actual_i = m->i;
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, actual_i);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_i, c->i);
   }
 }
 
@@ -381,17 +366,15 @@ static void test_FX15_sets_delay_timer_to_vx(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->v[cases[n].x_reg] = cases[n].vx;
-    m->delay_timer = 0xAA;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x_reg] = cases[n].vx;
+    c->delay_timer = 0xAA;
 
-    struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_delay_timer = m->delay_timer;
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX8(cases[n].vx, actual_delay_timer);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].vx, c->delay_timer);
   }
 }
 
@@ -407,17 +390,15 @@ static void test_FX18_sets_sound_timer_to_vx(void) {
   };
 
   for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
-    struct chip8 *m = chip8_create();
-    load_instruction(m, cases[n].opcode);
-    m->v[cases[n].x_reg] = cases[n].vx;
-    m->sound_timer = 0xAA;
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x_reg] = cases[n].vx;
+    c->sound_timer = 0xAA;
 
-    struct chip8_step_result r = chip8_step(m);
-    uint8_t actual_sound_timer = m->sound_timer;
-    chip8_destroy(m);
+    struct chip8_step_result r = chip8_step(c);
 
     TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
-    TEST_ASSERT_EQUAL_HEX8(cases[n].vx, actual_sound_timer);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].vx, c->sound_timer);
   }
 }
 
