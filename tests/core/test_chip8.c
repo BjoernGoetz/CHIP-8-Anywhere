@@ -402,6 +402,30 @@ static void test_FX1E_adds_vx_to_i(void) {
   }
 }
 
+static void test_FX07_sets_vx_to_delay_timer(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t delay_timer;
+  } cases[] = {
+      {0xF007, 0x0, 0x3C},
+      {0xF907, 0x9, 0x01},
+      {0xFF07, 0xF, 0xFF},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->delay_timer = cases[n].delay_timer;
+    c->v[cases[n].x_reg] = 0xAA;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].delay_timer, c->v[cases[n].x_reg]);
+  }
+}
+
 static void test_FX15_sets_delay_timer_to_vx(void) {
   const struct {
     uint16_t opcode;
@@ -471,6 +495,7 @@ int main(void) {
   RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
   RUN_TEST(test_FX65_increments_i_by_x_plus_1);
   RUN_TEST(test_FX1E_adds_vx_to_i);
+  RUN_TEST(test_FX07_sets_vx_to_delay_timer);
   RUN_TEST(test_FX15_sets_delay_timer_to_vx);
   RUN_TEST(test_FX18_sets_sound_timer_to_vx);
   return UNITY_END();
