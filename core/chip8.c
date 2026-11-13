@@ -68,6 +68,10 @@ static void execute_1NNN_jump(struct chip8 *c, uint16_t opcode) {
   c->pc = opcode & 0x0FFF;
 }
 
+static void execute_2NNN_call_subroutine(struct chip8 *c, uint16_t opcode) {
+  c->pc = opcode & 0x0FFF;
+}
+
 static void execute_FX65_load_registers(struct chip8 *c, uint16_t opcode) {
   uint8_t x = (opcode & 0x0F00) >> 8;
   for (int i = 0; i < x + 1; i++) {
@@ -109,6 +113,7 @@ struct instruction {
 static const struct instruction instructions[] = {
     {0xFFFF, 0x00E0, execute_00E0_clear_screen},
     {0xF000, 0x1000, execute_1NNN_jump},
+    {0xF000, 0x2000, execute_2NNN_call_subroutine},
     {0xF000, 0x6000, execute_6XNN_set_vx},
     {0xF000, 0x7000, execute_7XNN_add_to_vx},
     {0xF00F, 0x8000, execute_8XY0_set_vx_to_value_of_vy},
