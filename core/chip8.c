@@ -68,6 +68,14 @@ static void execute_1NNN_jump(struct chip8 *c, uint16_t opcode) {
   c->pc = opcode & 0x0FFF;
 }
 
+static void execute_FX65_load_registers(struct chip8 *c, uint16_t opcode) {
+  uint8_t x = (opcode & 0x0F00) >> 8;
+  for (int i = 0; i < x + 1; i++) {
+    c->v[i] = c->memory[c->i];
+    c->i += 1;
+  }
+}
+
 struct instruction {
   uint16_t mask;
   uint16_t pattern;
@@ -81,6 +89,7 @@ static const struct instruction instructions[] = {
     {0xF000, 0x7000, execute_7XNN_add_to_vx},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
+    {0xF0FF, 0xF065, execute_FX65_load_registers},
 };
 
 struct chip8_step_result chip8_step(struct chip8 *c) {

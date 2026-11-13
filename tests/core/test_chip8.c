@@ -1,6 +1,7 @@
 #include "chip8_internal.h"
 #include "unity.h"
 #include <stdlib.h>
+#include <string.h>
 
 void *chip8_platform_alloc(size_t size) { return malloc(size); }
 void chip8_platform_free(void *ptr) { free(ptr); }
@@ -274,6 +275,58 @@ static void test_DXYN_draws_n_rows(void) {
   TEST_ASSERT_EQUAL_STRING("00000000", read_display_row(c, 4, 5));
 }
 
+static void test_FX65_loads_v0_to_vx_from_memory(void) {
+  const uint8_t data[16] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+                            0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
+  const struct {
+    uint16_t opcode;
+    uint16_t i;
+    uint8_t expected_v[16];
+  } cases[] = {
+      {0xF065,
+       0x300,
+       {0x10, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0xAA, 0xAA, 0xAA, 0xAA}},
+      {0xF365,
+       0x5A4,
+       {0x10, 0x11, 0x12, 0x13, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0xAA, 0xAA, 0xAA, 0xAA}},
+      {0xFF65,
+       0xFF0,
+       {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B,
+        0x1C, 0x1D, 0x1E, 0x1F}},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    struct chip8 *m = chip8_create();
+    const uint8_t rom[] = {(uint8_t)(cases[n].opcode >> 8),
+                           (uint8_t)(cases[n].opcode & 0xFF)};
+    chip8_load_rom(m, rom, sizeof rom);
+    m->i = cases[n].i;
+    memcpy(&m->memory[cases[n].i], data, sizeof data);
+    memset(m->v, 0xAA, sizeof m->v);
+
+    struct chip8_step_result r = chip8_step(m);
+    uint8_t actual_v[16];
+    memcpy(actual_v, m->v, sizeof actual_v);
+    chip8_destroy(m);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(cases[n].expected_v, actual_v, 16);
+  }
+}
+
+static void test_FX65_increments_i_by_x_plus_1(void) {
+  const uint8_t rom[] = {0xF3, 0x65};
+  chip8_load_rom(c, rom, sizeof rom);
+  c->i = 0x300;
+
+  struct chip8_step_result r = chip8_step(c);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+  TEST_ASSERT_EQUAL_HEX16(0x304, c->i);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -289,5 +342,7 @@ int main(void) {
   RUN_TEST(test_7XNN_adds_nn_to_vx);
   RUN_TEST(test_DXYN_draws_sprite_row);
   RUN_TEST(test_DXYN_draws_n_rows);
+  RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
+  RUN_TEST(test_FX65_increments_i_by_x_plus_1);
   return UNITY_END();
 }
