@@ -200,6 +200,32 @@ static void test_3XNN_skips_if_vx_equals_nn(void) {
   }
 }
 
+static void test_5XY0_skips_if_vx_equals_vy(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg, y_reg;
+    uint8_t vx, vy;
+    uint16_t expected_pc;
+  } cases[] = {
+      {0x5230, 0x2, 0x3, 0x42, 0x42, 0x204}, /* equal */
+      {0x5230, 0x2, 0x3, 0x42, 0x43, 0x202}, /* not equal */
+      {0x5AF0, 0xA, 0xF, 0xFF, 0x00, 0x202}, /* not equal, other registers */
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->v, 0, sizeof c->v);
+    c->v[cases[n].x_reg] = cases[n].vx;
+    c->v[cases[n].y_reg] = cases[n].vy;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, c->pc);
+  }
+}
+
 static void test_ANNN_sets_i_to_nnn(void) {
   const struct {
     uint16_t opcode;
@@ -584,6 +610,7 @@ int main(void) {
   RUN_TEST(test_2NNN_jumps_to_nnn);
   RUN_TEST(test_00EE_returns_from_subroutine);
   RUN_TEST(test_3XNN_skips_if_vx_equals_nn);
+  RUN_TEST(test_5XY0_skips_if_vx_equals_vy);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
   RUN_TEST(test_6XNN_sets_vx_to_nn);
   RUN_TEST(test_7XNN_adds_nn_to_vx);
