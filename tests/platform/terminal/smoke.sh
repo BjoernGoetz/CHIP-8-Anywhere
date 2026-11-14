@@ -14,6 +14,17 @@ run_chip8() {
     ./build/chip8_sanitized "$@" > build/smoke_screen.txt 2> build/smoke_out.txt || status=$?
 }
 
+run_chip8_with_timeout() {
+    ./build/chip8_sanitized "$1" > /dev/null 2> build/smoke_out.txt &
+    pid=$!
+    ( sleep 2; kill "$pid" 2> /dev/null ) > /dev/null 2>&1 &
+    watchdog=$!
+    status=0
+    wait "$pid" 2> /dev/null || status=$?
+    kill "$watchdog" 2> /dev/null || true
+    wait "$watchdog" 2> /dev/null || true
+}
+
 expect_stderr() {
     echo "$1" > build/smoke_expected.txt
     cmp -s build/smoke_expected.txt build/smoke_out.txt
@@ -31,6 +42,18 @@ write_sprite_rom() {
     printf '\000\340\140\000\141\000\242\014\320\021\340\000\245' > build/smoke.ch8
 }
 
+# Writes a ROM that sets the delay timer to 6 (0.1 s at 60 Hz), waits for it
+# to reach 0, then stops at an unknown opcode:
+#   6006  V0 = 6
+#   F015  DT = V0
+#   F007  V0 = DT                 <- loop
+#   3000  skip next if V0 == 0
+#   1204  jump to loop
+#   E000  unknown opcode
+write_delay_timer_rom() {
+    printf '\140\006\360\025\360\007\060\000\022\004\340\000' > build/smoke.ch8
+}
+
 test_stops_at_unknown_opcode() {
     write_sprite_rom
     run_chip8 build/smoke.ch8
@@ -43,6 +66,12 @@ test_draws_last_frame() {
     run_chip8 build/smoke.ch8
     tail -n 32 build/smoke_screen.txt | head -n 1 | grep -q '██  ██    ██  ██  '
     [ "$(tail -n 31 build/smoke_screen.txt | grep -c '█')" -eq 0 ]
+}
+
+test_ticks_timers() {
+    write_delay_timer_rom
+    run_chip8_with_timeout build/smoke.ch8
+    expect_stderr "unknown opcode: E000"
 }
 
 test_reports_missing_rom_file() {
@@ -59,5 +88,6 @@ test_prints_usage_without_rom_path() {
 
 run_test test_stops_at_unknown_opcode
 run_test test_draws_last_frame
+run_test test_ticks_timers
 run_test test_reports_missing_rom_file
 run_test test_prints_usage_without_rom_path

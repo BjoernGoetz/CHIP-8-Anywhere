@@ -16,6 +16,7 @@ struct chip8 {
   uint8_t v[16];
   uint8_t delay_timer;
   uint8_t sound_timer;
+  uint32_t timer_remainder;
   bool display[CHIP8_DISPLAY_HEIGHT][CHIP8_DISPLAY_WIDTH];
   bool key_pressed[16];
 };

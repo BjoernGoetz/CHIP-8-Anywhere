@@ -22,6 +22,10 @@ static void reset_machine(void) {
   c = chip8_create();
 }
 
+static uint32_t microseconds_for_ticks(uint32_t ticks) {
+  return (ticks * 1000000 + 59) / 60;
+}
+
 static void test_create_sets_pc_to_program_start(void) {
   TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
 }
@@ -498,6 +502,51 @@ static void test_FX18_sets_sound_timer_to_vx(void) {
   }
 }
 
+static void test_update_timers_ticks_at_60_hz(void) {
+  const struct {
+    uint8_t timer;
+    uint32_t elapsed_microseconds;
+    uint8_t expected_timer;
+  } cases[] = {
+      {10, 0, 10},     /* no time passed */
+      {10, 16666, 10}, /* just under 1/60 s */
+      {10, 16667, 9},  /* one tick */
+      {10, 50000, 7},  /* exactly three ticks */
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    c->delay_timer = cases[n].timer;
+    c->sound_timer = cases[n].timer;
+
+    chip8_update_timers(c, cases[n].elapsed_microseconds);
+
+    TEST_ASSERT_EQUAL_UINT8(cases[n].expected_timer, c->delay_timer);
+    TEST_ASSERT_EQUAL_UINT8(cases[n].expected_timer, c->sound_timer);
+  }
+}
+
+static void test_update_timers_stops_at_zero(void) {
+  c->delay_timer = 1;
+  c->sound_timer = 1;
+
+  chip8_update_timers(c, microseconds_for_ticks(255));
+
+  TEST_ASSERT_EQUAL_UINT8(0, c->delay_timer);
+  TEST_ASSERT_EQUAL_UINT8(0, c->sound_timer);
+}
+
+static void test_update_timers_carries_remainder(void) {
+  c->delay_timer = 10;
+  c->sound_timer = 10;
+
+  chip8_update_timers(c, 8333);
+  chip8_update_timers(c, 8334); /* together exactly 16 667 µs */
+
+  TEST_ASSERT_EQUAL_UINT8(9, c->delay_timer);
+  TEST_ASSERT_EQUAL_UINT8(9, c->sound_timer);
+}
+
 int main(void) {
   UNITY_BEGIN();
   RUN_TEST(test_create_sets_pc_to_program_start);
@@ -523,5 +572,8 @@ int main(void) {
   RUN_TEST(test_FX07_sets_vx_to_delay_timer);
   RUN_TEST(test_FX15_sets_delay_timer_to_vx);
   RUN_TEST(test_FX18_sets_sound_timer_to_vx);
+  RUN_TEST(test_update_timers_ticks_at_60_hz);
+  RUN_TEST(test_update_timers_stops_at_zero);
+  RUN_TEST(test_update_timers_carries_remainder);
   return UNITY_END();
 }

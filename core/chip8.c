@@ -165,3 +165,15 @@ struct chip8_step_result chip8_step(struct chip8 *c) {
 
   return (struct chip8_step_result){CHIP8_STEP_UNKNOWN_OPCODE, opcode};
 }
+
+static uint8_t count_down(uint8_t timer, uint32_t ticks) {
+  return ticks >= timer ? 0 : (uint8_t)(timer - ticks);
+}
+
+void chip8_update_timers(struct chip8 *c, uint32_t elapsed_microseconds) {
+  uint32_t total = c->timer_remainder + elapsed_microseconds * 60;
+  uint32_t ticks = total / 1000000;
+  c->timer_remainder = total % 1000000;
+  c->delay_timer = count_down(c->delay_timer, ticks);
+  c->sound_timer = count_down(c->sound_timer, ticks);
+}
