@@ -63,6 +63,23 @@ static void test_read_pixel_reads_display(void) {
   }
 }
 
+static void test_is_sound_active_only_while_sound_timer_is_nonzero(void) {
+  const struct {
+    uint8_t sound_timer;
+    bool expected;
+  } cases[] = {
+      {0, false},
+      {1, true},
+      {255, true},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    c->sound_timer = cases[n].sound_timer;
+
+    TEST_ASSERT_EQUAL(cases[n].expected, chip8_is_sound_active(c));
+  }
+}
+
 static void test_step_reports_unknown_opcode(void) {
   load_instruction(c, 0xE000);
 
@@ -602,6 +619,7 @@ int main(void) {
   RUN_TEST(test_create_sets_pc_to_program_start);
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
   RUN_TEST(test_read_pixel_reads_display);
+  RUN_TEST(test_is_sound_active_only_while_sound_timer_is_nonzero);
   RUN_TEST(test_step_reports_unknown_opcode);
   RUN_TEST(test_00E0_clears_display);
   RUN_TEST(test_step_advances_pc_to_next_instruction);

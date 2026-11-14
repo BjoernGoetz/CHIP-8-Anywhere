@@ -25,6 +25,10 @@ bool chip8_read_pixel(const struct chip8 *c, int x, int y) {
   return c->display[y][x];
 }
 
+bool chip8_is_sound_active(const struct chip8 *c) {
+  return c->sound_timer != 0;
+}
+
 static void execute_00E0_clear_screen(struct chip8 *c, uint16_t opcode) {
   (void)opcode;
   for (int y = 0; y < DISPLAY_HEIGHT; y++) {
