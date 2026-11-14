@@ -34,6 +34,11 @@ static void execute_00E0_clear_screen(struct chip8 *c, uint16_t opcode) {
   }
 }
 
+static void execute_00EE_return(struct chip8 *c, uint16_t opcode) {
+  (void)opcode;
+  c->pc = c->return_address;
+}
+
 static void execute_ANNN_set_i(struct chip8 *c, uint16_t opcode) {
   c->i = opcode & 0x0FFF;
 }
@@ -69,6 +74,7 @@ static void execute_1NNN_jump(struct chip8 *c, uint16_t opcode) {
 }
 
 static void execute_2NNN_call_subroutine(struct chip8 *c, uint16_t opcode) {
+  c->return_address = c->pc;
   c->pc = opcode & 0x0FFF;
 }
 
@@ -136,6 +142,7 @@ struct instruction {
 
 static const struct instruction instructions[] = {
     {0xFFFF, 0x00E0, execute_00E0_clear_screen},
+    {0xFFFF, 0x00EE, execute_00EE_return},
     {0xF000, 0x1000, execute_1NNN_jump},
     {0xF000, 0x2000, execute_2NNN_call_subroutine},
     {0xF000, 0x3000, execute_3XNN_skip_if_vx_equals_nn},

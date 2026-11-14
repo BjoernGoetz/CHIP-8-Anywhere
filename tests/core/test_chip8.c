@@ -152,6 +152,30 @@ static void test_2NNN_jumps_to_nnn(void) {
   }
 }
 
+static void test_00EE_returns_from_subroutine(void) {
+  const struct {
+    uint8_t rom[10];
+    int steps;
+    uint16_t expected_pc;
+  } cases[] = {
+      /* 200: call 204, 202: -, 204: return */
+      {{0x22, 0x04, 0x00, 0x00, 0x00, 0xEE}, 2, 0x202},
+      /* 200: jump 204, 202: -, 204: call 208, 206: -, 208: return */
+      {{0x12, 0x04, 0x00, 0x00, 0x22, 0x08, 0x00, 0x00, 0x00, 0xEE}, 3, 0x206},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    chip8_load_rom(c, cases[n].rom, sizeof cases[n].rom);
+
+    for (int s = 0; s < cases[n].steps; s++) {
+      TEST_ASSERT_EQUAL(CHIP8_STEP_OK, chip8_step(c).status);
+    }
+
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, c->pc);
+  }
+}
+
 static void test_3XNN_skips_if_vx_equals_nn(void) {
   const struct {
     uint16_t opcode;
@@ -558,6 +582,7 @@ int main(void) {
   RUN_TEST(test_step_executes_instruction_at_pc);
   RUN_TEST(test_1NNN_jumps_to_nnn);
   RUN_TEST(test_2NNN_jumps_to_nnn);
+  RUN_TEST(test_00EE_returns_from_subroutine);
   RUN_TEST(test_3XNN_skips_if_vx_equals_nn);
   RUN_TEST(test_ANNN_sets_i_to_nnn);
   RUN_TEST(test_6XNN_sets_vx_to_nn);
