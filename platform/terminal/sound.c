@@ -3,6 +3,10 @@
 
 #include "sound.h"
 #include "miniaudio.h"
+#include <signal.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #define SAMPLE_RATE 44100
 #define TONE_HZ 441
