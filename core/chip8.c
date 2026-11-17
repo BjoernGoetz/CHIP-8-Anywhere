@@ -161,6 +161,15 @@ static void execute_5XY0_skip_if_vx_equals_vy(struct chip8 *c,
   }
 }
 
+static void execute_9XY0_skip_if_vx_not_equals_vy(struct chip8 *c,
+                                                  uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  uint8_t y_reg = (opcode & 0x00F0) >> 4;
+  if (c->v[x_reg] != c->v[y_reg]) {
+    skip_next_instruction(c);
+  }
+}
+
 struct instruction {
   uint16_t mask;
   uint16_t pattern;
@@ -178,6 +187,7 @@ static const struct instruction instructions[] = {
     {0xF000, 0x6000, execute_6XNN_set_vx},
     {0xF000, 0x7000, execute_7XNN_add_to_vx},
     {0xF00F, 0x8000, execute_8XY0_set_vx_to_value_of_vy},
+    {0xF00F, 0x9000, execute_9XY0_skip_if_vx_not_equals_vy},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
     {0xF0FF, 0xE0A1, execute_EXA1_skip_if_key_not_pressed},
