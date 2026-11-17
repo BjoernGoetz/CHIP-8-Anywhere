@@ -1,6 +1,7 @@
 #include "chip8.h"
 #include "chip8_platform.h"
 #include "display.h"
+#include "sound.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -41,6 +42,8 @@ int main(int argc, char **argv) {
   struct chip8 *c = chip8_create();
   chip8_load_rom(c, rom, size);
 
+  sound_init();
+
   struct chip8_step_result r;
   uint64_t last = monotonic_microseconds();
   do {
@@ -48,10 +51,12 @@ int main(int argc, char **argv) {
     uint64_t now = monotonic_microseconds();
     chip8_update_timers(c, (uint32_t)(now - last));
     last = now;
+    sound_set_active(chip8_is_sound_active(c));
     display_draw(c, stdout);
   } while (r.status == CHIP8_STEP_OK);
 
   fprintf(stderr, "unknown opcode: %04X\n", r.opcode);
+  sound_shutdown();
   chip8_destroy(c);
 
   return 1;

@@ -25,6 +25,17 @@ run_chip8_with_timeout() {
     wait "$watchdog" 2> /dev/null || true
 }
 
+run_chip8_with_audio_dump() {
+    rm -f build/smoke_audio.raw
+    export CHIP8_AUDIO_DUMP=build/smoke_audio.raw
+    run_chip8_with_timeout "$1"
+    unset CHIP8_AUDIO_DUMP
+}
+
+count_nonzero_audio_bytes() {
+    LC_ALL=C tr -d '\000' < build/smoke_audio.raw | wc -c | tr -d ' '
+}
+
 expect_stderr() {
     echo "$1" > build/smoke_expected.txt
     cmp -s build/smoke_expected.txt build/smoke_out.txt
@@ -54,6 +65,19 @@ write_delay_timer_rom() {
     printf '\140\006\360\025\360\007\060\000\022\004\340\000' > build/smoke.ch8
 }
 
+# Writes a ROM that plays a tone while waiting 0.1 s, then stops at an
+# unknown opcode:
+#   6006  V0 = 6
+#   F018  ST = V0
+#   F015  DT = V0
+#   F007  V0 = DT                 <- loop
+#   3000  skip next if V0 == 0
+#   1206  jump to loop
+#   E000  unknown opcode
+write_sound_rom() {
+    printf '\140\006\360\030\360\025\360\007\060\000\022\006\340\000' > build/smoke.ch8
+}
+
 test_stops_at_unknown_opcode() {
     write_sprite_rom
     run_chip8 build/smoke.ch8
@@ -74,6 +98,21 @@ test_ticks_timers() {
     expect_stderr "unknown opcode: E000"
 }
 
+test_plays_tone_while_sound_active() {
+    write_sound_rom
+    run_chip8_with_audio_dump build/smoke.ch8
+    expect_stderr "unknown opcode: E000"
+    [ "$(count_nonzero_audio_bytes)" -gt 0 ]
+}
+
+test_stays_silent_without_sound() {
+    write_delay_timer_rom
+    run_chip8_with_audio_dump build/smoke.ch8
+    expect_stderr "unknown opcode: E000"
+    [ -s build/smoke_audio.raw ]
+    [ "$(count_nonzero_audio_bytes)" -eq 0 ]
+}
+
 test_reports_missing_rom_file() {
     run_chip8 build/missing.ch8
     [ "$status" -eq 1 ]
@@ -89,5 +128,7 @@ test_prints_usage_without_rom_path() {
 run_test test_stops_at_unknown_opcode
 run_test test_draws_last_frame
 run_test test_ticks_timers
+run_test test_plays_tone_while_sound_active
+run_test test_stays_silent_without_sound
 run_test test_reports_missing_rom_file
 run_test test_prints_usage_without_rom_path
