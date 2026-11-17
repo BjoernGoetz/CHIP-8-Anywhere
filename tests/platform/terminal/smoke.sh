@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e
 
+export CHIP8_AUDIO_DUMP=/dev/null
+
 current_test=""
 trap 'code=$?; [ "$code" -eq 0 ] || echo "smoke: $current_test failed" >&2' EXIT
 
@@ -27,9 +29,9 @@ run_chip8_with_timeout() {
 
 run_chip8_with_audio_dump() {
     rm -f build/smoke_audio.raw
-    export CHIP8_AUDIO_DUMP=build/smoke_audio.raw
+    CHIP8_AUDIO_DUMP=build/smoke_audio.raw
     run_chip8_with_timeout "$1"
-    unset CHIP8_AUDIO_DUMP
+    CHIP8_AUDIO_DUMP=/dev/null
 }
 
 count_nonzero_audio_bytes() {
