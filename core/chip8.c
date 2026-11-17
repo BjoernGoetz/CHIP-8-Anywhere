@@ -6,6 +6,7 @@
 #define PROGRAM_START 0x200
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_WIDTH 64
+#define INSTRUCTION_SIZE 2
 
 struct chip8 *chip8_create(void) {
   struct chip8 *c = chip8_platform_alloc(sizeof(struct chip8));
@@ -27,6 +28,10 @@ bool chip8_read_pixel(const struct chip8 *c, int x, int y) {
 
 bool chip8_is_sound_active(const struct chip8 *c) {
   return c->sound_timer != 0;
+}
+
+static void skip_next_instruction(struct chip8 *c) {
+  c->pc += INSTRUCTION_SIZE;
 }
 
 static void execute_00E0_clear_screen(struct chip8 *c, uint16_t opcode) {
@@ -119,7 +124,7 @@ static void execute_EXA1_skip_if_key_not_pressed(struct chip8 *c,
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
   uint8_t x = c->v[x_reg];
   if (!c->key_pressed[x]) {
-    c->pc += 2;
+    skip_next_instruction(c);
   }
 }
 
@@ -134,7 +139,7 @@ static void execute_3XNN_skip_if_vx_equals_nn(struct chip8 *c,
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
   uint8_t nn = opcode & 0x00FF;
   if (c->v[x_reg] == nn) {
-    c->pc += 2;
+    skip_next_instruction(c);
   }
 }
 
@@ -143,7 +148,7 @@ static void execute_4XNN_skip_if_vx_not_equals_nn(struct chip8 *c,
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
   uint8_t nn = opcode & 0x00FF;
   if (c->v[x_reg] != nn) {
-    c->pc += 2;
+    skip_next_instruction(c);
   }
 }
 
@@ -152,7 +157,7 @@ static void execute_5XY0_skip_if_vx_equals_vy(struct chip8 *c,
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
   uint8_t y_reg = (opcode & 0x00F0) >> 4;
   if (c->v[x_reg] == c->v[y_reg]) {
-    c->pc += 2;
+    skip_next_instruction(c);
   }
 }
 
@@ -185,7 +190,7 @@ static const struct instruction instructions[] = {
 
 struct chip8_step_result chip8_step(struct chip8 *c) {
   uint16_t opcode = (uint16_t)(c->memory[c->pc] << 8 | c->memory[c->pc + 1]);
-  c->pc += 2;
+  c->pc += INSTRUCTION_SIZE;
 
   for (size_t i = 0; i < sizeof instructions / sizeof instructions[0]; i++) {
     if ((opcode & instructions[i].mask) == instructions[i].pattern) {
