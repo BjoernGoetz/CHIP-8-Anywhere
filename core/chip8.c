@@ -145,6 +145,12 @@ static void execute_8XY7_set_vx_to_vy_minus_vx(struct chip8 *c,
   c->v[x_reg] = c->v[y_reg] - c->v[x_reg];
 }
 
+static void execute_8XYE_shift_left(struct chip8 *c, uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  uint8_t y_reg = (opcode & 0x00F0) >> 4;
+  c->v[x_reg] = c->v[y_reg] << 1;
+}
+
 static void execute_FX1E_add_vx_to_i(struct chip8 *c, uint16_t opcode) {
   uint8_t x = (opcode & 0x0F00) >> 8;
   c->i += c->v[x];
@@ -237,6 +243,7 @@ static const struct instruction instructions[] = {
     {0xF00F, 0x8005, execute_8XY5_subtract_vy_from_vx},
     {0xF00F, 0x8006, execute_8XY6_shift_right},
     {0xF00F, 0x8007, execute_8XY7_set_vx_to_vy_minus_vx},
+    {0xF00F, 0x800E, execute_8XYE_shift_left},
     {0xF00F, 0x9000, execute_9XY0_skip_if_vx_not_equals_vy},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
