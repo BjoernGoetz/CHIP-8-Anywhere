@@ -646,6 +646,31 @@ static void test_8XY5_subtracts_vy_from_vx(void) {
   }
 }
 
+static void test_8XY7_sets_vx_to_vy_minus_vx(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg, y_reg;
+    uint8_t x, y;
+    uint8_t expected;
+  } cases[] = {
+      {0x8767, 0x7, 0x6, 0x10, 0x30, 0x20},
+      {0x8767, 0x7, 0x6, 0x30, 0x10, 0xE0}, /* wraps around below 0 */
+      {0x8017, 0x0, 0x1, 0x42, 0x42, 0x00},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->v[cases[n].x_reg] = cases[n].x;
+    c->v[cases[n].y_reg] = cases[n].y;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].expected, c->v[cases[n].x_reg]);
+  }
+}
+
 static void test_FX1E_adds_vx_to_i(void) {
   const struct {
     uint16_t opcode;
@@ -815,6 +840,7 @@ int main(void) {
   RUN_TEST(test_8XY3_sets_vx_to_vx_xor_vy);
   RUN_TEST(test_8XY4_adds_vy_to_vx);
   RUN_TEST(test_8XY5_subtracts_vy_from_vx);
+  RUN_TEST(test_8XY7_sets_vx_to_vy_minus_vx);
   RUN_TEST(test_DXYN_draws_sprite_row);
   RUN_TEST(test_DXYN_draws_n_rows);
   RUN_TEST(test_EXA1_skips_if_key_not_pressed);
