@@ -29,6 +29,10 @@ bool chip8_is_sound_active(const struct chip8 *c) {
   return c->sound_timer != 0;
 }
 
+void chip8_set_key(struct chip8 *c, enum chip8_key key, bool pressed) {
+  c->key_pressed[key] = pressed;
+}
+
 static void skip_next_instruction(struct chip8 *c) {
   c->pc += INSTRUCTION_SIZE;
 }

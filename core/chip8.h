@@ -13,6 +13,25 @@
 
 struct chip8;
 
+enum chip8_key {
+  CHIP8_KEY_0,
+  CHIP8_KEY_1,
+  CHIP8_KEY_2,
+  CHIP8_KEY_3,
+  CHIP8_KEY_4,
+  CHIP8_KEY_5,
+  CHIP8_KEY_6,
+  CHIP8_KEY_7,
+  CHIP8_KEY_8,
+  CHIP8_KEY_9,
+  CHIP8_KEY_A,
+  CHIP8_KEY_B,
+  CHIP8_KEY_C,
+  CHIP8_KEY_D,
+  CHIP8_KEY_E,
+  CHIP8_KEY_F,
+};
+
 enum chip8_step_status {
   CHIP8_STEP_OK,
   CHIP8_STEP_UNKNOWN_OPCODE,
@@ -28,6 +47,7 @@ void chip8_destroy(struct chip8 *c);
 void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size);
 struct chip8_step_result chip8_step(struct chip8 *c);
 void chip8_update_timers(struct chip8 *c, uint32_t elapsed_microseconds);
+void chip8_set_key(struct chip8 *c, enum chip8_key key, bool pressed);
 bool chip8_read_pixel(const struct chip8 *c, int x, int y);
 bool chip8_is_sound_active(const struct chip8 *c);
 

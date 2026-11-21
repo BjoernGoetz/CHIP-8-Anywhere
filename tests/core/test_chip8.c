@@ -80,6 +80,25 @@ static void test_is_sound_active_only_while_sound_timer_is_nonzero(void) {
   }
 }
 
+static void test_set_key_presses_and_releases_key(void) {
+  const struct {
+    enum chip8_key key;
+    bool pressed;
+  } cases[] = {
+      {CHIP8_KEY_0, true},  {CHIP8_KEY_5, true},  {CHIP8_KEY_F, true},
+      {CHIP8_KEY_0, false}, {CHIP8_KEY_5, false}, {CHIP8_KEY_F, false},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    memset(c->key_pressed, !cases[n].pressed, sizeof c->key_pressed);
+
+    chip8_set_key(c, cases[n].key, cases[n].pressed);
+
+    TEST_ASSERT_EQUAL(cases[n].pressed, c->key_pressed[cases[n].key]);
+  }
+}
+
 static void test_step_reports_unknown_opcode(void) {
   load_instruction(c, 0xE000);
 
@@ -943,6 +962,7 @@ int main(void) {
   RUN_TEST(test_load_rom_copies_rom_to_0x200);
   RUN_TEST(test_read_pixel_reads_display);
   RUN_TEST(test_is_sound_active_only_while_sound_timer_is_nonzero);
+  RUN_TEST(test_set_key_presses_and_releases_key);
   RUN_TEST(test_step_reports_unknown_opcode);
   RUN_TEST(test_00E0_clears_display);
   RUN_TEST(test_step_advances_pc_to_next_instruction);
