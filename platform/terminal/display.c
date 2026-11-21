@@ -1,4 +1,5 @@
 #include "display.h"
+#include "drivers.h"
 
 void display_draw(const struct chip8 *c, FILE *out) {
   fputs("\x1b[H", out);
@@ -9,3 +10,5 @@ void display_draw(const struct chip8 *c, FILE *out) {
     fputc('\n', out);
   }
 }
+
+void display_update(const struct chip8 *c) { display_draw(c, stdout); }

@@ -1,19 +1,12 @@
-#include "keyboard.h"
+#include "drivers.h"
 #include <fcntl.h>
 #include <stdbool.h>
 #include <termios.h>
-#include <time.h>
 #include <unistd.h>
 
 #define RELEASE_AFTER_MICROSECONDS 100000
 
 static uint64_t last_seen[16];
-
-static uint64_t now_microseconds(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * 1000000 + (uint64_t)ts.tv_nsec / 1000;
-}
 
 void keyboard_init(void) {
   struct termios t;
@@ -51,7 +44,7 @@ static int key_for_char(char character) {
 }
 
 void keyboard_update(struct chip8 *c) {
-  uint64_t now = now_microseconds();
+  uint64_t now = clock_microseconds();
   char character;
 
   while (read(STDIN_FILENO, &character, 1) == 1) {

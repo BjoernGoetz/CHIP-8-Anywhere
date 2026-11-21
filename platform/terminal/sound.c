@@ -1,7 +1,7 @@
 /* Compiles miniaudio's implementation into this file. */
 #define MINIAUDIO_IMPLEMENTATION
 
-#include "sound.h"
+#include "drivers.h"
 #include "miniaudio.h"
 #include <signal.h>
 #include <stdint.h>
