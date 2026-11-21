@@ -13,11 +13,11 @@ run_test() {
 
 run_chip8() {
     status=0
-    ./build/chip8_sanitized "$@" > build/smoke_screen.txt 2> build/smoke_out.txt || status=$?
+    ./build/chip8_sanitized "$@" < /dev/null > build/smoke_screen.txt 2> build/smoke_out.txt || status=$?
 }
 
 run_chip8_with_timeout() {
-    ./build/chip8_sanitized "$1" > /dev/null 2> build/smoke_out.txt &
+    ./build/chip8_sanitized "$1" < "${2:-/dev/null}" > /dev/null 2> build/smoke_out.txt &
     pid=$!
     ( sleep 2; kill "$pid" 2> /dev/null ) > /dev/null 2>&1 &
     watchdog=$!
@@ -80,6 +80,17 @@ write_sound_rom() {
     printf '\140\006\360\030\360\025\360\007\060\000\022\006\340\000' > build/smoke.ch8
 }
 
+# Writes a ROM that waits until key 5 is pressed, then stops at an unknown
+# opcode:
+#   6005  V0 = 5
+#   E0A1  skip next if key V0 is not pressed    <- loop
+#   1208  jump to the end
+#   1202  jump to loop
+#   E000  unknown opcode
+write_wait_for_key_rom() {
+    printf '\140\005\340\241\022\010\022\002\340\000' > build/smoke.ch8
+}
+
 test_stops_at_unknown_opcode() {
     write_sprite_rom
     run_chip8 build/smoke.ch8
@@ -115,6 +126,18 @@ test_stays_silent_without_sound() {
     [ "$(count_nonzero_audio_bytes)" -eq 0 ]
 }
 
+test_reads_keys_from_stdin() {
+    write_wait_for_key_rom
+    rm -f build/smoke_keys.fifo
+    mkfifo build/smoke_keys.fifo
+    ( printf 'w'; sleep 3 ) > build/smoke_keys.fifo &
+    writer=$!
+    run_chip8_with_timeout build/smoke.ch8 build/smoke_keys.fifo
+    kill "$writer" 2> /dev/null || true
+    wait "$writer" 2> /dev/null || true
+    expect_stderr "unknown opcode: E000"
+}
+
 test_reports_missing_rom_file() {
     run_chip8 build/missing.ch8
     [ "$status" -eq 1 ]
@@ -132,5 +155,6 @@ run_test test_draws_last_frame
 run_test test_ticks_timers
 run_test test_plays_tone_while_sound_active
 run_test test_stays_silent_without_sound
+run_test test_reads_keys_from_stdin
 run_test test_reports_missing_rom_file
 run_test test_prints_usage_without_rom_path

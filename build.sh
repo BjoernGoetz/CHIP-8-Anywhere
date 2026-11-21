@@ -8,7 +8,7 @@ POSIX="-D_POSIX_C_SOURCE=199309L"
 
 CORE="core/chip8.c"
 TERMINAL="platform/terminal/main.c platform/terminal/display.c \
-    platform/terminal/sound.c"
+    platform/terminal/keyboard.c platform/terminal/sound.c"
 
 UNITY="-isystem third_party/unity third_party/unity/unity.c"
 MINIAUDIO="-isystem third_party/miniaudio -lm"
