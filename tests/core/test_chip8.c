@@ -487,6 +487,33 @@ static void test_DXYN_draws_n_rows(void) {
   TEST_ASSERT_EQUAL_STRING("00000000", read_display_row(c, 4, 5));
 }
 
+static void test_EX9E_skips_if_key_pressed(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t checked_key;
+    uint8_t pressed_key;
+    uint16_t expected_pc;
+  } cases[] = {
+      {0xE49E, 0x4, 0x5, 0x5, 0x204}, /* pressed */
+      {0xE09E, 0x0, 0x5, 0xA, 0x202}, /* not pressed */
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->key_pressed, false, sizeof c->key_pressed);
+    c->key_pressed[cases[n].pressed_key] = true;
+    memset(c->v, 0, sizeof c->v);
+    c->v[cases[n].x_reg] = cases[n].checked_key;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, c->pc);
+  }
+}
+
 static void test_EXA1_skips_if_key_not_pressed(void) {
   const struct {
     uint16_t opcode;
@@ -1034,6 +1061,7 @@ int main(void) {
   RUN_TEST(test_8XYE_shifts_left_by_one);
   RUN_TEST(test_DXYN_draws_sprite_row);
   RUN_TEST(test_DXYN_draws_n_rows);
+  RUN_TEST(test_EX9E_skips_if_key_pressed);
   RUN_TEST(test_EXA1_skips_if_key_not_pressed);
   RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
   RUN_TEST(test_FX65_increments_i_by_x_plus_1);

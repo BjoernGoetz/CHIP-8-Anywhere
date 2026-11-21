@@ -189,6 +189,14 @@ static void execute_FX18_set_sound_timer_to_vx(struct chip8 *c,
   c->sound_timer = c->v[x_reg];
 }
 
+static void execute_EX9E_skip_if_key_pressed(struct chip8 *c, uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+  uint8_t x = c->v[x_reg];
+  if (c->key_pressed[x]) {
+    skip_next_instruction(c);
+  }
+}
+
 static void execute_EXA1_skip_if_key_not_pressed(struct chip8 *c,
                                                  uint16_t opcode) {
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
@@ -268,6 +276,7 @@ static const struct instruction instructions[] = {
     {0xF00F, 0x9000, execute_9XY0_skip_if_vx_not_equals_vy},
     {0xF000, 0xA000, execute_ANNN_set_i},
     {0xF000, 0xD000, execute_DXYN_draw},
+    {0xF0FF, 0xE09E, execute_EX9E_skip_if_key_pressed},
     {0xF0FF, 0xE0A1, execute_EXA1_skip_if_key_not_pressed},
     {0xF0FF, 0xF007, execute_FX07_set_vx_to_delay_timer},
     {0xF0FF, 0xF015, execute_FX15_set_delay_timer_to_vx},
