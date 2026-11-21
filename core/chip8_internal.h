@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 struct chip8 {
-  uint8_t memory[4096];
+  uint8_t memory[CHIP8_MEMORY_SIZE];
   uint16_t pc;
   uint16_t return_address;
   uint16_t i;

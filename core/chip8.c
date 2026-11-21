@@ -3,14 +3,13 @@
 #include "chip8_platform.h"
 #include <stdint.h>
 
-#define PROGRAM_START 0x200
 #define DISPLAY_HEIGHT 32
 #define DISPLAY_WIDTH 64
 #define INSTRUCTION_SIZE 2
 
 struct chip8 *chip8_create(void) {
   struct chip8 *c = chip8_platform_alloc(sizeof(struct chip8));
-  c->pc = PROGRAM_START;
+  c->pc = CHIP8_PROGRAM_START;
   return c;
 }
 
@@ -18,7 +17,7 @@ void chip8_destroy(struct chip8 *c) { chip8_platform_free(c); }
 
 void chip8_load_rom(struct chip8 *c, const uint8_t *rom, size_t size) {
   for (size_t i = 0; i < size; i++) {
-    c->memory[PROGRAM_START + i] = rom[i];
+    c->memory[CHIP8_PROGRAM_START + i] = rom[i];
   }
 }
 
