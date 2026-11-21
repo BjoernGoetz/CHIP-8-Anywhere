@@ -212,6 +212,30 @@ static void test_00EE_returns_from_subroutine(void) {
   }
 }
 
+static void test_00EE_returns_from_nested_subroutines_in_reverse_order(void) {
+  const uint8_t rom[] = {0x22, 0x04, 0x00, 0x00, 0x22, 0x08, 0x00,
+                         0xEE, 0x22, 0x0C, 0x00, 0xEE, 0x00, 0xEE};
+  const struct {
+    int steps;
+    uint16_t expected_pc;
+  } cases[] = {
+      {4, 0x20A},
+      {5, 0x206},
+      {6, 0x202},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    chip8_load_rom(c, rom, sizeof rom);
+
+    for (int s = 0; s < cases[n].steps; s++) {
+      TEST_ASSERT_EQUAL(CHIP8_STEP_OK, chip8_step(c).status);
+    }
+
+    TEST_ASSERT_EQUAL_HEX16(cases[n].expected_pc, c->pc);
+  }
+}
+
 static void test_3XNN_skips_if_vx_equals_nn(void) {
   const struct {
     uint16_t opcode;
@@ -970,6 +994,7 @@ int main(void) {
   RUN_TEST(test_1NNN_jumps_to_nnn);
   RUN_TEST(test_2NNN_jumps_to_nnn);
   RUN_TEST(test_00EE_returns_from_subroutine);
+  RUN_TEST(test_00EE_returns_from_nested_subroutines_in_reverse_order);
   RUN_TEST(test_3XNN_skips_if_vx_equals_nn);
   RUN_TEST(test_4XNN_skips_if_vx_not_equals_nn);
   RUN_TEST(test_5XY0_skips_if_vx_equals_vy);

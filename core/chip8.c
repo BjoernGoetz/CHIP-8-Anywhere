@@ -48,7 +48,8 @@ static void execute_00E0_clear_screen(struct chip8 *c, uint16_t opcode) {
 
 static void execute_00EE_return(struct chip8 *c, uint16_t opcode) {
   (void)opcode;
-  c->pc = c->return_address;
+  c->sp--;
+  c->pc = c->stack[c->sp];
 }
 
 static void execute_ANNN_set_i(struct chip8 *c, uint16_t opcode) {
@@ -86,7 +87,8 @@ static void execute_1NNN_jump(struct chip8 *c, uint16_t opcode) {
 }
 
 static void execute_2NNN_call_subroutine(struct chip8 *c, uint16_t opcode) {
-  c->return_address = c->pc;
+  c->stack[c->sp] = c->pc;
+  c->sp++;
   c->pc = opcode & 0x0FFF;
 }
 
