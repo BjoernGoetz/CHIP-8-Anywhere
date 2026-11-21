@@ -544,6 +544,34 @@ static void test_FX55_increments_i_by_x_plus_1(void) {
   TEST_ASSERT_EQUAL_HEX16(0x304, c->i);
 }
 
+static void test_FX33_stores_vx_as_decimal_digits(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t vx;
+    uint16_t i;
+    uint8_t expected_memory[3];
+  } cases[] = {
+      {0xF633, 0x6, 156, 0x300, {1, 5, 6}},
+      {0xF033, 0x0, 7, 0x5A4, {0, 0, 7}}, /* leading zeros */
+      {0xFE33, 0xE, 255, 0xFFD, {2, 5, 5}},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->i = cases[n].i;
+    c->v[cases[n].x_reg] = cases[n].vx;
+    memset(&c->memory[cases[n].i], 0xAA, 3);
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(cases[n].expected_memory,
+                                  &c->memory[cases[n].i], 3);
+  }
+}
+
 static void test_8XY0_set_vx_to_value_of_vy(void) {
   const struct {
     uint16_t opcode;
@@ -945,6 +973,7 @@ int main(void) {
   RUN_TEST(test_FX65_increments_i_by_x_plus_1);
   RUN_TEST(test_FX55_stores_v0_to_vx_in_memory);
   RUN_TEST(test_FX55_increments_i_by_x_plus_1);
+  RUN_TEST(test_FX33_stores_vx_as_decimal_digits);
   RUN_TEST(test_FX1E_adds_vx_to_i);
   RUN_TEST(test_FX07_sets_vx_to_delay_timer);
   RUN_TEST(test_FX15_sets_delay_timer_to_vx);
