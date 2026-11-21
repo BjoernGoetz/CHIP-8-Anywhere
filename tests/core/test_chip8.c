@@ -497,6 +497,53 @@ static void test_FX65_increments_i_by_x_plus_1(void) {
   TEST_ASSERT_EQUAL_HEX16(0x304, c->i);
 }
 
+static void test_FX55_stores_v0_to_vx_in_memory(void) {
+  const uint8_t data[16] = {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17,
+                            0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
+  const struct {
+    uint16_t opcode;
+    uint16_t i;
+    uint8_t expected_memory[16];
+  } cases[] = {
+      {0xF055,
+       0x300,
+       {0x10, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0xAA, 0xAA, 0xAA, 0xAA}},
+      {0xF355,
+       0x5A4,
+       {0x10, 0x11, 0x12, 0x13, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA, 0xAA,
+        0xAA, 0xAA, 0xAA, 0xAA}},
+      {0xFF55,
+       0xFF0,
+       {0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B,
+        0x1C, 0x1D, 0x1E, 0x1F}},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    c->i = cases[n].i;
+    memcpy(c->v, data, sizeof data);
+    memset(&c->memory[cases[n].i], 0xAA, sizeof data);
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX8_ARRAY(cases[n].expected_memory,
+                                 &c->memory[cases[n].i], 16);
+  }
+}
+
+static void test_FX55_increments_i_by_x_plus_1(void) {
+  load_instruction(c, 0xF355);
+  c->i = 0x300;
+
+  struct chip8_step_result r = chip8_step(c);
+
+  TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+  TEST_ASSERT_EQUAL_HEX16(0x304, c->i);
+}
+
 static void test_8XY0_set_vx_to_value_of_vy(void) {
   const struct {
     uint16_t opcode;
@@ -896,6 +943,8 @@ int main(void) {
   RUN_TEST(test_EXA1_skips_if_key_not_pressed);
   RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
   RUN_TEST(test_FX65_increments_i_by_x_plus_1);
+  RUN_TEST(test_FX55_stores_v0_to_vx_in_memory);
+  RUN_TEST(test_FX55_increments_i_by_x_plus_1);
   RUN_TEST(test_FX1E_adds_vx_to_i);
   RUN_TEST(test_FX07_sets_vx_to_delay_timer);
   RUN_TEST(test_FX15_sets_delay_timer_to_vx);

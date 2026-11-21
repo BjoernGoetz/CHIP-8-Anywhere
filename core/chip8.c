@@ -95,6 +95,14 @@ static void execute_FX65_load_registers(struct chip8 *c, uint16_t opcode) {
   }
 }
 
+static void execute_FX55_store_registers(struct chip8 *c, uint16_t opcode) {
+  uint8_t x = (opcode & 0x0F00) >> 8;
+  for (int i = 0; i < x + 1; i++) {
+    c->memory[c->i] = c->v[i];
+    c->i += 1;
+  }
+}
+
 static void execute_8XY0_set_vx_to_value_of_vy(struct chip8 *c,
                                                uint16_t opcode) {
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
@@ -252,6 +260,7 @@ static const struct instruction instructions[] = {
     {0xF0FF, 0xF015, execute_FX15_set_delay_timer_to_vx},
     {0xF0FF, 0xF018, execute_FX18_set_sound_timer_to_vx},
     {0xF0FF, 0xF01E, execute_FX1E_add_vx_to_i},
+    {0xF0FF, 0xF055, execute_FX55_store_registers},
     {0xF0FF, 0xF065, execute_FX65_load_registers},
 };
 
