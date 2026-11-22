@@ -71,7 +71,7 @@ static void execute_DXYN_draw(struct chip8 *c, uint16_t opcode) {
   for (int y = 0; y < n; y++) {
     uint8_t sprite = c->memory[c->i + y];
     for (int x = 0; x < 8; x++) {
-      c->display[y_offset + y][x_offset + x] = sprite >> (7 - x) & 1;
+      c->display[y_offset + y][x_offset + x] ^= sprite >> (7 - x) & 1;
     }
   }
 }

@@ -487,6 +487,36 @@ static void test_DXYN_draws_n_rows(void) {
   TEST_ASSERT_EQUAL_STRING("00000000", read_display_row(c, 4, 5));
 }
 
+static void test_DXYN_xors_sprite_onto_display(void) {
+  const struct {
+    uint8_t first_sprite;
+    uint8_t second_sprite;
+    const char *row;
+  } cases[] = {
+      {0xFF, 0xF0, "00001111"}, /* 1 bits turn lit pixels off */
+      {0x0F, 0xF0, "11111111"}, /* 0 bits leave pixels unchanged */
+      {0xA5, 0xA5, "00000000"}, /* drawing the same sprite twice clears it */
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, 0xD011);
+    memset(c->display, false, sizeof c->display);
+    c->i = 0x300;
+    c->v[0] = 8;
+    c->v[1] = 3;
+    c->memory[0x300] = cases[n].first_sprite;
+    chip8_step(c);
+    c->pc = 0x200;
+    c->memory[0x300] = cases[n].second_sprite;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_STRING(cases[n].row, read_display_row(c, 8, 3));
+  }
+}
+
 static void test_EX9E_skips_if_key_pressed(void) {
   const struct {
     uint16_t opcode;
@@ -1165,6 +1195,7 @@ int main(void) {
   RUN_TEST(test_8XYE_shifts_left_by_one);
   RUN_TEST(test_DXYN_draws_sprite_row);
   RUN_TEST(test_DXYN_draws_n_rows);
+  RUN_TEST(test_DXYN_xors_sprite_onto_display);
   RUN_TEST(test_EX9E_skips_if_key_pressed);
   RUN_TEST(test_EXA1_skips_if_key_not_pressed);
   RUN_TEST(test_FX65_loads_v0_to_vx_from_memory);
