@@ -7,10 +7,9 @@ SANITIZE="-fsanitize=address,undefined -fno-sanitize-recover=all"
 POSIX="-D_POSIX_C_SOURCE=199309L"
 
 CORE="core/chip8.c"
-COMMON="platform/common/emulator.c"
-TERMINAL="platform/terminal/main.c platform/terminal/clock.c \
-    platform/terminal/display.c platform/terminal/keyboard.c \
-    platform/terminal/sound.c"
+COMMON="platform/common/main.c platform/common/emulator.c"
+TERMINAL="platform/terminal/clock.c platform/terminal/display.c \
+    platform/terminal/keyboard.c platform/terminal/sound.c"
 
 UNITY="-isystem third_party/unity third_party/unity/unity.c"
 MINIAUDIO="-isystem third_party/miniaudio -lm"

@@ -1,6 +1,8 @@
 #include "display.h"
 #include "drivers.h"
 
+void display_init(void) {}
+
 void display_draw(const struct chip8 *c, FILE *out) {
   fputs("\x1b[H", out);
   for (int y = 0; y < CHIP8_DISPLAY_HEIGHT; y++) {
@@ -12,3 +14,5 @@ void display_draw(const struct chip8 *c, FILE *out) {
 }
 
 void display_update(const struct chip8 *c) { display_draw(c, stdout); }
+
+void display_shutdown(void) {}

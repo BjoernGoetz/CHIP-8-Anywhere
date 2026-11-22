@@ -11,7 +11,9 @@
 
 uint64_t clock_microseconds(void);
 
+void display_init(void);
 void display_update(const struct chip8 *c);
+void display_shutdown(void);
 
 void keyboard_init(void);
 void keyboard_update(struct chip8 *c);
