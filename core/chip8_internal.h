@@ -21,6 +21,8 @@ struct chip8 {
   uint32_t timer_remainder;
   bool display[CHIP8_DISPLAY_HEIGHT][CHIP8_DISPLAY_WIDTH];
   bool key_pressed[16];
+  bool waiting_for_release;
+  uint8_t waiting_key;
 };
 
 #endif

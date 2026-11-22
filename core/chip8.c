@@ -212,6 +212,25 @@ static void execute_FX07_set_vx_to_delay_timer(struct chip8 *c,
   c->v[x_reg] = c->delay_timer;
 }
 
+static void execute_FX0A_wait_for_key(struct chip8 *c, uint16_t opcode) {
+  uint8_t x_reg = (opcode & 0x0F00) >> 8;
+
+  if (c->waiting_for_release && !c->key_pressed[c->waiting_key]) {
+    c->v[x_reg] = c->waiting_key;
+    c->waiting_for_release = false;
+    return;
+  }
+
+  for (uint8_t key = 0; key < 16; key++) {
+    if (c->key_pressed[key]) {
+      c->waiting_key = key;
+      c->waiting_for_release = true;
+    }
+  }
+
+  c->pc -= INSTRUCTION_SIZE;
+}
+
 static void execute_3XNN_skip_if_vx_equals_nn(struct chip8 *c,
                                               uint16_t opcode) {
   uint8_t x_reg = (opcode & 0x0F00) >> 8;
@@ -279,6 +298,7 @@ static const struct instruction instructions[] = {
     {0xF0FF, 0xE09E, execute_EX9E_skip_if_key_pressed},
     {0xF0FF, 0xE0A1, execute_EXA1_skip_if_key_not_pressed},
     {0xF0FF, 0xF007, execute_FX07_set_vx_to_delay_timer},
+    {0xF0FF, 0xF00A, execute_FX0A_wait_for_key},
     {0xF0FF, 0xF015, execute_FX15_set_delay_timer_to_vx},
     {0xF0FF, 0xF018, execute_FX18_set_sound_timer_to_vx},
     {0xF0FF, 0xF01E, execute_FX1E_add_vx_to_i},

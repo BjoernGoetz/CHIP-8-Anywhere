@@ -934,6 +934,110 @@ static void test_FX07_sets_vx_to_delay_timer(void) {
   }
 }
 
+static void test_FX0A_waits_while_no_key_is_pressed(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+  } cases[] = {
+      {0xF00A, 0x0},
+      {0xF30A, 0x3},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->key_pressed, false, sizeof c->key_pressed);
+    c->v[cases[n].x_reg] = 0xAA;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, c->v[cases[n].x_reg]);
+  }
+}
+
+static void test_FX0A_waits_while_key_is_held(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t key;
+  } cases[] = {
+      {0xF00A, 0x0, 0x5},
+      {0xF30A, 0x3, 0xE},
+      {0xF70A, 0x7, 0xF},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->key_pressed, false, sizeof c->key_pressed);
+    c->key_pressed[cases[n].key] = true;
+    c->v[cases[n].x_reg] = 0xAA;
+    chip8_step(c);
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
+    TEST_ASSERT_EQUAL_HEX8(0xAA, c->v[cases[n].x_reg]);
+  }
+}
+
+static void test_FX0A_stores_key_when_released(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t key;
+  } cases[] = {
+      {0xF00A, 0x0, 0x5},
+      {0xF30A, 0x3, 0xE},
+      {0xF70A, 0x7, 0xF},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->key_pressed, false, sizeof c->key_pressed);
+    c->key_pressed[cases[n].key] = true;
+    chip8_step(c);
+    c->key_pressed[cases[n].key] = false;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(0x202, c->pc);
+    TEST_ASSERT_EQUAL_HEX8(cases[n].key, c->v[cases[n].x_reg]);
+  }
+}
+
+static void test_FX0A_waits_again_after_release(void) {
+  const struct {
+    uint16_t opcode;
+    uint8_t x_reg;
+    uint8_t key;
+  } cases[] = {
+      {0xF00A, 0x0, 0x5},
+      {0xF30A, 0x3, 0xE},
+  };
+
+  for (size_t n = 0; n < sizeof cases / sizeof cases[0]; n++) {
+    reset_machine();
+    load_instruction(c, cases[n].opcode);
+    memset(c->key_pressed, false, sizeof c->key_pressed);
+    c->key_pressed[cases[n].key] = true;
+    chip8_step(c);
+    c->key_pressed[cases[n].key] = false;
+    chip8_step(c);
+    c->pc = 0x200;
+
+    struct chip8_step_result r = chip8_step(c);
+
+    TEST_ASSERT_EQUAL(CHIP8_STEP_OK, r.status);
+    TEST_ASSERT_EQUAL_HEX16(0x200, c->pc);
+  }
+}
+
 static void test_FX15_sets_delay_timer_to_vx(void) {
   const struct {
     uint16_t opcode;
@@ -1070,6 +1174,10 @@ int main(void) {
   RUN_TEST(test_FX33_stores_vx_as_decimal_digits);
   RUN_TEST(test_FX1E_adds_vx_to_i);
   RUN_TEST(test_FX07_sets_vx_to_delay_timer);
+  RUN_TEST(test_FX0A_waits_while_no_key_is_pressed);
+  RUN_TEST(test_FX0A_waits_while_key_is_held);
+  RUN_TEST(test_FX0A_stores_key_when_released);
+  RUN_TEST(test_FX0A_waits_again_after_release);
   RUN_TEST(test_FX15_sets_delay_timer_to_vx);
   RUN_TEST(test_FX18_sets_sound_timer_to_vx);
   RUN_TEST(test_update_timers_ticks_at_60_hz);
